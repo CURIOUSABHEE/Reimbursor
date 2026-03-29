@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
   Receipt,
@@ -43,46 +44,59 @@ export function Sidebar({ userRole }: SidebarProps) {
     return userRole && item.roles.includes(userRole as "EMPLOYEE" | "MANAGER" | "ADMIN")
   })
 
-  // Group items by section
   const mainItems  = filteredNavItems.filter((i) => !i.section)
   const adminItems = filteredNavItems.filter((i) => i.section === "Admin")
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 shrink-0 min-h-screen border-r"
-      style={{
-        background: "hsl(var(--sidebar-bg))",
-        borderColor: "hsl(var(--sidebar-border))",
-      }}
-    >
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 min-h-screen border-r border-sidebar-border bg-sidebar-bg transition-premium">
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 border-b shrink-0"
-        style={{ borderColor: "hsl(var(--sidebar-border))" }}
-      >
-        <span className="text-white font-bold text-lg tracking-tight">
-          Reimbursor
-        </span>
+      <div className="h-20 flex items-center px-6 border-b border-sidebar-border shrink-0">
+        <motion.div 
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-2"
+        >
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+            <Receipt className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-white font-bold text-xl tracking-tight">
+            Reimbursor
+          </span>
+        </motion.div>
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {mainItems.map((item) => (
-          <NavLink key={item.href} item={item} pathname={pathname} />
-        ))}
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {mainItems.map((item) => (
+            <NavLink key={item.href} item={item} pathname={pathname} />
+          ))}
 
-        {adminItems.length > 0 && (
-          <>
-            <div className="pt-6 pb-1.5 px-2">
-              <span className="text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "hsl(var(--sidebar-fg) / 0.5)" }}
-              >
-                Admin
-              </span>
-            </div>
-            {adminItems.map((item) => (
-              <NavLink key={item.href} item={item} pathname={pathname} />
-            ))}
-          </>
-        )}
+          {adminItems.length > 0 && (
+            <>
+              <div className="pt-8 pb-3 px-3">
+                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-sidebar-fg opacity-40">
+                  Administration
+                </span>
+              </div>
+              {adminItems.map((item) => (
+                <NavLink key={item.href} item={item} pathname={pathname} />
+              ))}
+            </>
+          )}
+        </motion.div>
       </nav>
     </aside>
   )
@@ -102,38 +116,43 @@ function NavLink({
     <Link
       href={item.href}
       className={cn(
-        "group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
+        "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-premium overflow-hidden",
         isActive
           ? "text-white"
-          : "hover:text-white"
+          : "text-sidebar-fg hover:text-white hover:bg-sidebar-item-hover"
       )}
-      style={
-        isActive
-          ? { background: "hsl(var(--sidebar-item-active))", color: "hsl(var(--sidebar-fg-active))" }
-          : { color: "hsl(var(--sidebar-fg))" }
-      }
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          (e.currentTarget as HTMLAnchorElement).style.background = "hsl(var(--sidebar-item-hover))"
-          ;(e.currentTarget as HTMLAnchorElement).style.color = "hsl(var(--sidebar-fg-active))"
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          (e.currentTarget as HTMLAnchorElement).style.background = ""
-          ;(e.currentTarget as HTMLAnchorElement).style.color = "hsl(var(--sidebar-fg))"
-        }
-      }}
     >
-      {/* Active indicator bar */}
-      {isActive && (
-        <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r"
-          style={{ background: "hsl(var(--sidebar-indicator))" }}
+      <AnimatePresence>
+        {isActive && (
+          <motion.div
+            layoutId="active-nav-bg"
+            className="absolute inset-0 bg-primary"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <span className="relative z-10 flex items-center gap-3">
+        <Icon className={cn(
+          "w-5 h-5 shrink-0 transition-premium",
+          isActive ? "text-white" : "group-hover:scale-110"
+        )} />
+        <span className="font-medium tracking-tight">{item.label}</span>
+      </span>
+
+      {/* Hover effect for inactive items */}
+      {!isActive && (
+        <motion.div
+          className="absolute inset-0 bg-sidebar-item-hover opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"
         />
       )}
-      <Icon className="w-4 h-4 shrink-0" />
-      <span>{item.label}</span>
     </Link>
   )
 }

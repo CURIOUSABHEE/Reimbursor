@@ -63,10 +63,10 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
   const isManagerOrAdmin = session.user.role === "MANAGER" || session.user.role === "ADMIN"
 
   const stats = [
-    { label: "Total Submitted", value: data?.totalExpenses ?? 0, icon: Receipt,      color: "#2563eb", bg: "#eff6ff", isCount: true },
-    { label: "Pending Review",  value: data?.pendingCount ?? 0,  icon: Clock,        color: "#c2410c", bg: "#fff7ed", isCount: true },
-    { label: "Approved",        value: data?.approvedCount ?? 0, icon: CheckCircle2, color: "#15803d", bg: "#f0fdf4", isCount: true },
-    { label: "Rejected",        value: data?.rejectedCount ?? 0, icon: XCircle,      color: "#dc2626", bg: "#fef2f2", isCount: true },
+    { label: "Total Submitted", value: data?.totalExpenses ?? 0, icon: Receipt,      color: "#2563eb", bg: "#eff6ff" },
+    { label: "Pending Review",  value: data?.pendingCount ?? 0,  icon: Clock,        color: "#c2410c", bg: "#fff7ed" },
+    { label: "Approved",        value: data?.approvedCount ?? 0, icon: CheckCircle2, color: "#15803d", bg: "#f0fdf4" },
+    { label: "Rejected",        value: data?.rejectedCount ?? 0, icon: XCircle,      color: "#dc2626", bg: "#fef2f2" },
   ]
 
   return (
