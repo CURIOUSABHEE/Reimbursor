@@ -4,12 +4,19 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { CompanySetupModal } from "@/components/CompanySetupModal"
 import { StatusPill } from "@/components/ui/status-pill"
+import { AdminDashboard } from "@/components/dashboard/AdminDashboard"
+import { ManagerDashboard } from "@/components/dashboard/ManagerDashboard"
+import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard"
 import { Plus, ArrowRight, Clock, CheckCircle2, XCircle, Receipt, TrendingUp } from "lucide-react"
 
 interface Company { id: string; name: string; currency: string }
 interface Expense {
   id: string; description: string; category: string
-  submittedAmount: number; submittedCurrency: string; status: string; createdAt: string
+  submittedAmount: number; submittedCurrency: string; status: string
+  date?: string; createdAt?: string
+  convertedAmount?: number
+  employee?: { name: string; email: string }
+  isAdminOverride?: boolean
 }
 interface DashboardData {
   role: string
@@ -27,6 +34,10 @@ interface DashboardData {
   rejectedByMe?: number
   myExpenses?: Expense[]
   pendingApprovalsList?: Expense[]
+  toSubmit?: number
+  underValidation?: number
+  toBeReimbursed?: number
+  draftCount?: number
 }
 interface Session { user: { id: string; name: string; email: string; role: string } }
 interface Props { company: Company | null; showSetup: boolean; onShowSetupChange: (s: boolean) => void }
@@ -87,6 +98,86 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
   ]
 
   const pendingApprovals = data?.pendingApprovals ?? data?.pendingApprovalCount ?? 0
+
+  if (session.user.role === "ADMIN" && data) {
+    return (
+      <AdminDashboard
+        userName={session.user.name}
+        currency={company?.currency || "USD"}
+        userCount={data.userCount || 0}
+        pendingCount={data.pendingCount || 0}
+        approvedTotal={data.approvedTotal || 0}
+        pendingTotal={data.pendingTotal || 0}
+        expenses={(data.expenses || []).map(e => ({
+          id: e.id,
+          description: e.description,
+          category: e.category,
+          date: e.date || e.createdAt || "",
+          submittedAmount: e.submittedAmount,
+          submittedCurrency: e.submittedCurrency,
+          convertedAmount: e.convertedAmount || 0,
+          status: e.status,
+          employee: e.employee || { name: "Unknown", email: "" },
+          isAdminOverride: e.isAdminOverride || false,
+        }))}
+      />
+    )
+  }
+
+  if (session.user.role === "MANAGER" && data) {
+    return (
+      <ManagerDashboard
+        userName={session.user.name}
+        currency={company?.currency || "USD"}
+        pendingApprovalCount={data.pendingApprovalCount || data.pendingApprovals || 0}
+        approvedByMe={data.approvedByMe || 0}
+        rejectedByMe={data.rejectedByMe || 0}
+        myExpenses={(data.myExpenses || data.expenses || []).map(e => ({
+          id: e.id,
+          description: e.description,
+          category: e.category,
+          date: e.date || e.createdAt || "",
+          submittedAmount: e.submittedAmount,
+          submittedCurrency: e.submittedCurrency,
+          convertedAmount: e.convertedAmount || 0,
+          status: e.status,
+        }))}
+        pendingApprovals={(data.pendingApprovalsList || []).map(e => ({
+          id: e.id,
+          description: e.description,
+          category: e.category,
+          date: e.date || e.createdAt || "",
+          submittedAmount: e.submittedAmount,
+          submittedCurrency: e.submittedCurrency,
+          convertedAmount: e.convertedAmount || 0,
+          status: e.status,
+          employee: e.employee || { name: "Employee", email: "" },
+        }))}
+      />
+    )
+  }
+
+  if (session.user.role === "EMPLOYEE" && data) {
+    return (
+      <EmployeeDashboard
+        userName={session.user.name}
+        currency={company?.currency || "USD"}
+        toSubmit={data.toSubmit || 0}
+        underValidation={data.underValidation || 0}
+        toBeReimbursed={data.toBeReimbursed || 0}
+        expenses={(data.expenses || []).map(e => ({
+          id: e.id,
+          description: e.description,
+          category: e.category,
+          date: e.date || e.createdAt || "",
+          submittedAmount: e.submittedAmount,
+          submittedCurrency: e.submittedCurrency,
+          convertedAmount: e.convertedAmount || 0,
+          status: e.status,
+        }))}
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">

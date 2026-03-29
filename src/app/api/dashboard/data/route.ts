@@ -143,7 +143,7 @@ export async function GET() {
     })
   }
 
-  const [expenses, stats] = await Promise.all([
+  const [expenses, stats, draftSum, pendingSum, approvedSum] = await Promise.all([
     prisma.expense.findMany({
       where: { employeeId: userId },
       orderBy: { createdAt: "desc" },
@@ -153,6 +153,18 @@ export async function GET() {
       by: ["status"],
       where: { employeeId: userId },
       _count: { _all: true },
+    }),
+    prisma.expense.aggregate({
+      where: { employeeId: userId, status: "DRAFT" },
+      _sum: { convertedAmount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { employeeId: userId, status: "PENDING" },
+      _sum: { convertedAmount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { employeeId: userId, status: "APPROVED" },
+      _sum: { convertedAmount: true },
     }),
   ])
 
@@ -176,8 +188,12 @@ export async function GET() {
       convertedAmount: Number(e.convertedAmount),
       status: e.status,
     })),
+    draftCount: statusCounts.DRAFT || 0,
     pendingCount: statusCounts.PENDING || 0,
     approvedCount: statusCounts.APPROVED || 0,
     rejectedCount: statusCounts.REJECTED || 0,
+    toSubmit: Number(draftSum._sum.convertedAmount) || 0,
+    underValidation: Number(pendingSum._sum.convertedAmount) || 0,
+    toBeReimbursed: Number(approvedSum._sum.convertedAmount) || 0,
   })
 }
