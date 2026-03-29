@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { approvalActionSchema } from "@/lib/validations"
+import { initializeNotificationHandlers, notifyApprovalAction, notifyExpenseApproved, notifyExpenseRejected } from "@/lib/notifications"
+
+initializeNotificationHandlers()
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -62,33 +65,38 @@ export async function POST(request: Request) {
 
     const { expenseId, action, comment } = parsed.data
 
-    const approvalAction = await prisma.approvalAction.findFirst({
+    const approvalActionRecord = await prisma.approvalAction.findFirst({
       where: {
         expenseId,
         approverId: session.user.id,
         action: "PENDING",
       },
-      include: { expense: true },
+      include: { 
+        expense: {
+          include: { employee: { select: { id: true, name: true } } }
+        }
+      },
     })
 
-    if (!approvalAction) {
+    if (!approvalActionRecord) {
       return NextResponse.json(
         { error: "No pending approval found" },
         { status: 404 }
       )
     }
 
+    const expense = approvalActionRecord.expense
+    let isFullyApproved = false
+
     await prisma.$transaction(async (tx) => {
       await tx.approvalAction.update({
-        where: { id: approvalAction.id },
+        where: { id: approvalActionRecord.id },
         data: {
           action,
           comment,
           actedAt: new Date(),
         },
       })
-
-      const expense = approvalAction.expense
 
       if (action === "APPROVED") {
         const totalActions = await tx.approvalAction.count({
@@ -103,6 +111,7 @@ export async function POST(request: Request) {
         })
 
         if (approvedActions === totalActions) {
+          isFullyApproved = true
           await tx.expense.update({
             where: { id: expenseId },
             data: { status: "APPROVED" },
@@ -113,19 +122,41 @@ export async function POST(request: Request) {
           where: { id: expenseId },
           data: {
             status: "REJECTED",
-            currentApprovalStep: approvalAction.stepOrder,
+            currentApprovalStep: approvalActionRecord.stepOrder,
           },
         })
       }
-
-      await tx.notification.create({
-        data: {
-          userId: expense.employeeId,
-          expenseId,
-          message: `Your expense "${expense.description}" was ${action === "APPROVED" ? "approved" : "rejected"} by ${session.user.name}.`,
-        },
-      })
     })
+
+    await notifyApprovalAction({
+      expenseId,
+      expenseDescription: expense.description,
+      employeeId: expense.employeeId,
+      employeeName: expense.employee.name,
+      companyId: session.user.companyId,
+      approverId: session.user.id,
+      action,
+      comment,
+    })
+
+    if (action === "APPROVED" && isFullyApproved) {
+      await notifyExpenseApproved({
+        expenseId,
+        expenseDescription: expense.description,
+        employeeId: expense.employeeId,
+        employeeName: expense.employee.name,
+        companyId: session.user.companyId,
+      })
+    } else if (action === "REJECTED") {
+      await notifyExpenseRejected({
+        expenseId,
+        expenseDescription: expense.description,
+        employeeId: expense.employeeId,
+        employeeName: expense.employee.name,
+        companyId: session.user.companyId,
+        comment,
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
