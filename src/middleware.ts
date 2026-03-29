@@ -6,26 +6,17 @@ export default withAuth(
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
 
-    const isAuthPage = path.startsWith("/login") || 
-                       path.startsWith("/signup") ||
-                       path.startsWith("/forgot-password") ||
-                       path.startsWith("/reset-password")
-
-    if (!token && !isAuthPage) {
+    if (!token) {
       const loginUrl = new URL("/login", req.url)
-      loginUrl.searchParams.set("callbackUrl", req.url)
+      loginUrl.searchParams.set("callbackUrl", path)
       return NextResponse.redirect(loginUrl)
     }
 
-    if (token && isAuthPage) {
+    if (path.startsWith("/admin") && token.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url))
     }
 
-    if (token && path.startsWith("/admin") && token.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
-    }
-
-    if (token && path.startsWith("/approvals") && 
+    if (path.startsWith("/approvals") && 
         token.role !== "MANAGER" && token.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url))
     }
@@ -34,15 +25,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token, req }) => {
-        const path = req.nextUrl.pathname
-        const isAuthPage = path.startsWith("/login") || 
-                           path.startsWith("/signup") ||
-                           path.startsWith("/forgot-password") ||
-                           path.startsWith("/reset-password") ||
-                           path === "/" ||
-                           path === "/api/auth"
-        if (isAuthPage) return true
+      authorized: ({ token }) => {
         return !!token
       },
     },
@@ -51,6 +34,10 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard/:path*",
+    "/expenses/:path*",
+    "/approvals/:path*",
+    "/admin/:path*",
+    "/notifications/:path*",
   ],
 }
