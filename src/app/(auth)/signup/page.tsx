@@ -17,14 +17,41 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true); setError("")
     try {
+      if (form.password.length < 8) {
+        setError("Password must be at least 8 characters")
+        setLoading(false)
+        return
+      }
+      if (!/[A-Z]/.test(form.password)) {
+        setError("Password must contain at least one uppercase letter")
+        setLoading(false)
+        return
+      }
+      if (!/[a-z]/.test(form.password)) {
+        setError("Password must contain at least one lowercase letter")
+        setLoading(false)
+        return
+      }
+      if (!/[0-9]/.test(form.password)) {
+        setError("Password must contain at least one number")
+        setLoading(false)
+        return
+      }
+
       const res = await fetch("/api/auth/signup", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || "Signup failed"); setLoading(false); return }
+      
       const r = await signIn("credentials", { email: form.email, password: form.password, redirect: false })
-      router.push(r?.error ? "/login" : "/dashboard")
+      if (r?.error) {
+        setError("Account created! Please sign in with your credentials.")
+        router.push("/login")
+      } else {
+        router.push("/dashboard")
+      }
     } catch { setError("An error occurred."); setLoading(false) }
   }
 
@@ -54,7 +81,8 @@ export default function SignupPage() {
         </div>
         <div>
           <label className="o-field-label">Password</label>
-          <input type="password" className="o-input" placeholder="Min 6 characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+          <input type="password" className="o-input" placeholder="At least 8 characters with uppercase, lowercase, and number" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} />
+          <p className="mt-1 text-[10px] text-gray-500">Must contain 8+ characters with uppercase, lowercase, and a number</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

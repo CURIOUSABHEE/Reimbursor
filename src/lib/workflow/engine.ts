@@ -162,15 +162,27 @@ export class WorkflowEngine {
     })
 
     if (!expense) {
+      logger.error("Expense not found for validation", { expenseId: this.expenseId })
       return { valid: false, error: "Expense not found" }
     }
 
     if (expense.status !== ExpenseStatus.DRAFT) {
-      return { 
-        valid: false, 
-        error: `Expense is not in DRAFT status. Current status: ${expense.status}` 
+      logger.warn("Expense not in DRAFT status", {
+        expenseId: this.expenseId,
+        currentStatus: expense.status,
+      })
+      return {
+        valid: false,
+        error: `Expense is not in DRAFT status. Current status: ${expense.status}`,
       }
     }
+
+    logger.info("Validating expense for submission", {
+      expenseId: this.expenseId,
+      employeeId: expense.employeeId,
+      employeeName: expense.employee.name,
+      amount: expense.convertedAmount,
+    })
 
     const workflow = await prisma.approvalWorkflow.findFirst({
       where: {
@@ -184,24 +196,67 @@ export class WorkflowEngine {
       },
     })
 
-    if (!workflow || workflow.steps.length === 0) {
-      logger.info("No active workflow found, auto-approving expense", { 
-        expenseId: this.expenseId 
+    if (workflow && workflow.steps.length > 0) {
+      logger.info("Found active workflow", {
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        stepCount: workflow.steps.length,
+      })
+
+      const firstStep = convertToWorkflowStep(workflow.steps[0])
+      const hasApprovers = await this.resolveApproversForStep(firstStep, expense)
+
+      if (hasApprovers.length === 0) {
+        logger.error("No approvers found for first workflow step", {
+          expenseId: this.expenseId,
+          stepName: firstStep.name,
+        })
+        return {
+          valid: false,
+          error: `No approvers found for workflow step "${firstStep.name}". Please configure approvers in the workflow settings.`,
+        }
+      }
+
+      return { valid: true, expense }
+    }
+
+    logger.info("No active workflow found, checking for ApprovalRules", {
+      expenseId: this.expenseId,
+      companyId: this.companyId,
+    })
+
+    const rule = await prisma.approvalRule.findFirst({
+      where: {
+        companyId: this.companyId,
+        OR: [
+          { assignedUserId: expense.employeeId },
+          { assignedUserId: null },
+        ],
+      },
+      orderBy: [
+        { assignedUserId: "desc" },
+        { createdAt: "desc" },
+      ],
+    })
+
+    if (rule) {
+      logger.info("Found applicable ApprovalRule", {
+        expenseId: this.expenseId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        isManagerApprover: rule.isManagerApprover,
       })
       return { valid: true, expense }
     }
 
-    const firstStep = convertToWorkflowStep(workflow.steps[0])
-    const hasApprovers = await this.resolveApproversForStep(firstStep, expense)
-    
-    if (hasApprovers.length === 0) {
-      return { 
-        valid: false, 
-        error: `No approvers found for workflow step "${firstStep.name}". Please configure approvers in the workflow settings.` 
-      }
+    logger.error("No workflow or approval rules configured", {
+      expenseId: this.expenseId,
+      companyId: this.companyId,
+    })
+    return {
+      valid: false,
+      error: "No approval workflow or rules configured. Please set up an approval workflow or create approval rules.",
     }
-
-    return { valid: true, expense }
   }
 
   private async resolveApproversForStep(
@@ -214,6 +269,14 @@ export class WorkflowEngine {
   ): Promise<string[]> {
     const approverIds: string[] = []
 
+    logger.debug("Resolving approvers for step", {
+      expenseId: expense.id,
+      stepName: step.name,
+      stepApproverRole: step.approverRole,
+      hasApproverIds: step.approverIds?.length > 0,
+      hasSpecificApprover: !!step.specificApproverId,
+    })
+
     if (step.approverIds && step.approverIds.length > 0) {
       const validApprovers = await prisma.user.findMany({
         where: {
@@ -223,6 +286,7 @@ export class WorkflowEngine {
         select: { id: true },
       })
       approverIds.push(...validApprovers.map(u => u.id))
+      logger.debug("Added approvers from step.approverIds", { count: validApprovers.length })
     }
 
     if (step.specificApproverId) {
@@ -231,18 +295,49 @@ export class WorkflowEngine {
       })
       if (specificApprover && specificApprover.companyId === expense.companyId) {
         approverIds.push(step.specificApproverId)
+        logger.debug("Added specific approver", { approverId: step.specificApproverId })
       }
     }
 
     if (step.approverRole) {
-      const users = await prisma.user.findMany({
-        where: {
-          companyId: expense.companyId,
-          role: step.approverRole as Role,
-        },
-        select: { id: true },
-      })
-      approverIds.push(...users.map(u => u.id))
+      if (step.approverRole === Role.MANAGER) {
+        const employee = await prisma.user.findUnique({
+          where: { id: expense.employeeId },
+          select: { id: true, managerId: true, name: true },
+        })
+
+        if (employee?.managerId) {
+          approverIds.push(employee.managerId)
+          logger.info("Assigned employee's manager as approver", {
+            expenseId: expense.id,
+            employeeId: expense.employeeId,
+            managerId: employee.managerId,
+          })
+        } else {
+          logger.warn("Employee has no manager assigned", {
+            expenseId: expense.id,
+            employeeId: expense.employeeId,
+            employeeName: employee?.name,
+          })
+          throw new Error(
+            `Cannot assign manager as approver: employee "${employee?.name || expense.employeeId}" has no manager. ` +
+            `Please assign a manager to the employee or configure approvers in the workflow step.`
+          )
+        }
+      } else {
+        const users = await prisma.user.findMany({
+          where: {
+            companyId: expense.companyId,
+            role: step.approverRole as Role,
+          },
+          select: { id: true },
+        })
+        approverIds.push(...users.map(u => u.id))
+        logger.debug("Added approvers by role", {
+          role: step.approverRole,
+          count: users.length,
+        })
+      }
     }
 
     if (approverIds.length === 0) {
@@ -253,11 +348,31 @@ export class WorkflowEngine {
 
       if (employee?.managerId) {
         approverIds.push(employee.managerId)
+        logger.info("Using employee manager as fallback approver", {
+          expenseId: expense.id,
+          employeeId: expense.employeeId,
+          managerId: employee.managerId,
+        })
+      } else {
+        logger.error("No approvers found and no fallback manager", {
+          expenseId: expense.id,
+          employeeId: expense.employeeId,
+        })
+        throw new Error(
+          `No approvers configured for workflow step "${step.name}" and employee has no manager. ` +
+          `Please configure approvers in the workflow or assign a manager to the employee.`
+        )
       }
-      // Removed: no longer add all company admins as fallback approvers
     }
 
-    return Array.from(new Set(approverIds))
+    const uniqueApproverIds = Array.from(new Set(approverIds))
+    logger.info("Resolved approvers", {
+      expenseId: expense.id,
+      approvers: uniqueApproverIds,
+      count: uniqueApproverIds.length,
+    })
+
+    return uniqueApproverIds
   }
 
   private async selectWorkflowSteps(
@@ -328,30 +443,39 @@ export class WorkflowEngine {
 
       // ── No ApprovalWorkflow configured — try ApprovalRule fallback ──
       if (!workflow || workflow.steps.length === 0) {
-        const ruleApprovers = await this.resolveApprovalRuleApprovers(expense)
+        const { ruleId, approverIds: ruleApprovers } = await this.resolveApprovalRuleApprovers(expense)
 
         if (ruleApprovers.length > 0) {
           logger.info("No workflow found, using ApprovalRule approvers", {
             expenseId: this.expenseId,
+            ruleId,
             approvers: ruleApprovers,
           })
 
-          // Create a synthetic step (stepOrder = 1) using rule approvers
-          for (const approverId of ruleApprovers) {
-            await prisma.approvalAction.create({
-              data: {
-                expenseId: this.expenseId,
-                stepId: null,
-                approverId,
-                stepOrder: 1,
-                action: ActionStatus.PENDING,
-              },
-            })
-          }
+          await prisma.$transaction(
+            ruleApprovers.map((approverId) =>
+              prisma.approvalAction.create({
+                data: {
+                  expenseId: this.expenseId,
+                  stepId: null,
+                  approverId,
+                  stepOrder: 1,
+                  action: ActionStatus.PENDING,
+                  ruleId: ruleId || undefined,
+                },
+              })
+            )
+          )
 
           await prisma.expense.update({
             where: { id: this.expenseId },
             data: { status: ExpenseStatus.PENDING, currentWorkflowStep: 1 },
+          })
+
+          logger.info("ApprovalRule workflow created successfully", {
+            expenseId: this.expenseId,
+            ruleId,
+            approverCount: ruleApprovers.length,
           })
 
           return {
@@ -448,8 +572,20 @@ export class WorkflowEngine {
     id: string
     employeeId: string
     companyId: string
-  }): Promise<string[]> {
-    // Find the most specific rule: assigned to this employee, or a company-wide rule
+  }): Promise<{ ruleId: string | null; approverIds: string[] }> {
+    const employee = await prisma.user.findUnique({
+      where: { id: expense.employeeId },
+      select: { id: true, name: true, managerId: true },
+    })
+
+    if (!employee) {
+      logger.error("Employee not found for rule resolution", {
+        expenseId: expense.id,
+        employeeId: expense.employeeId,
+      })
+      return { ruleId: null, approverIds: [] }
+    }
+
     const rule = await prisma.approvalRule.findFirst({
       where: {
         companyId: expense.companyId,
@@ -466,44 +602,100 @@ export class WorkflowEngine {
         manager: { select: { id: true } },
       },
       orderBy: [
-        // Prefer rules assigned to this specific employee
         { assignedUserId: "desc" },
         { createdAt: "desc" },
       ],
     })
 
-    if (!rule) return []
+    if (!rule) {
+      logger.info("No ApprovalRule found for expense", {
+        expenseId: expense.id,
+        employeeId: expense.employeeId,
+        companyId: expense.companyId,
+      })
+      return { ruleId: null, approverIds: [] }
+    }
+
+    logger.info("Found ApprovalRule for expense", {
+      expenseId: expense.id,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      isManagerApprover: rule.isManagerApprover,
+      explicitApproverCount: rule.approvers.length,
+    })
 
     const approverIds: string[] = []
 
-    // If manager is flagged as approver, add them first
     if (rule.isManagerApprover) {
-      // Use rule's explicit manager, or fall back to employee's manager
-      const managerId = rule.managerId ?? (await prisma.user.findUnique({
-        where: { id: expense.employeeId },
-        select: { managerId: true },
-      }))?.managerId
+      const managerId = rule.managerId ?? employee.managerId
 
-      if (managerId) approverIds.push(managerId)
-    }
-
-    // Add explicit approvers from the rule
-    for (const ra of rule.approvers) {
-      if (!approverIds.includes(ra.user.id)) {
-        approverIds.push(ra.user.id)
+      if (managerId) {
+        approverIds.push(managerId)
+        logger.info("Added manager as approver from rule", {
+          expenseId: expense.id,
+          ruleId: rule.id,
+          managerId,
+          source: rule.managerId ? "rule.managerId" : "employee.managerId",
+        })
+      } else {
+        logger.error("Rule requires manager approval but no manager available", {
+          expenseId: expense.id,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          employeeId: employee.id,
+          employeeName: employee.name,
+        })
+        throw new Error(
+          `Approval rule "${rule.name}" requires manager approval, but employee "${employee.name}" has no manager assigned. ` +
+          `Please assign a manager to the employee or modify the approval rule.`
+        )
       }
     }
 
-    // If still empty, fall back to employee's direct manager
-    if (approverIds.length === 0) {
-      const employee = await prisma.user.findUnique({
-        where: { id: expense.employeeId },
-        select: { managerId: true },
-      })
-      if (employee?.managerId) approverIds.push(employee.managerId)
+    for (const ra of rule.approvers) {
+      if (!approverIds.includes(ra.user.id)) {
+        approverIds.push(ra.user.id)
+        logger.debug("Added explicit approver from rule", {
+          expenseId: expense.id,
+          ruleId: rule.id,
+          approverId: ra.user.id,
+          stepOrder: ra.stepOrder,
+        })
+      }
     }
 
-    return Array.from(new Set(approverIds))
+    if (approverIds.length === 0) {
+      if (employee.managerId) {
+        approverIds.push(employee.managerId)
+        logger.info("No explicit approvers in rule, using employee's manager as fallback", {
+          expenseId: expense.id,
+          ruleId: rule.id,
+          managerId: employee.managerId,
+        })
+      } else {
+        logger.error("No approvers in rule and employee has no manager", {
+          expenseId: expense.id,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          employeeId: employee.id,
+          employeeName: employee.name,
+        })
+        throw new Error(
+          `No approvers configured in approval rule "${rule.name}" and employee has no manager. ` +
+          `Please add approvers to the rule or assign a manager to the employee.`
+        )
+      }
+    }
+
+    const uniqueApproverIds = Array.from(new Set(approverIds))
+    logger.info("Resolved rule approvers", {
+      expenseId: expense.id,
+      ruleId: rule.id,
+      approvers: uniqueApproverIds,
+      count: uniqueApproverIds.length,
+    })
+
+    return { ruleId: rule.id, approverIds: uniqueApproverIds }
   }
 
   private async createApprovalActionsForStep(
