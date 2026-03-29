@@ -43,6 +43,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/expenses", label: "My Expenses" },
+    { href: "/chat", label: "Chat" },
   ]
 
   if (session.user.role === "MANAGER" || session.user.role === "ADMIN") {
@@ -51,6 +52,9 @@ export function Navbar() {
 
   if (session.user.role === "ADMIN") {
     navLinks.push({ href: "/admin/expenses", label: "All Expenses" })
+    navLinks.push({ href: "/admin/users", label: "Users" })
+    navLinks.push({ href: "/admin/approval-rules", label: "Approval Rules" })
+    navLinks.push({ href: "/admin/db", label: "DB Viewer" })
   }
 
   return (

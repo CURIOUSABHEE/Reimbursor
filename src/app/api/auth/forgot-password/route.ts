@@ -46,12 +46,7 @@ export async function POST(request: Request) {
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
     
-    if (process.env.RESEND_API_KEY) {
-      await sendPasswordResetEmail(email, token, baseUrl)
-    } else {
-      console.log(`Password reset token for ${email}: ${token}`)
-      console.log(`Reset URL: ${baseUrl}/reset-password?token=${token}`)
-    }
+    await sendPasswordResetEmail(email, token, baseUrl)
 
     return NextResponse.json({
       message: "If an account exists with this email, a reset link has been sent.",

@@ -26,7 +26,10 @@ model User {
   password  String
   role      Role     @default(EMPLOYEE)
   companyId String
+  managerId String?
   company   Company  @relation(fields: [companyId], references: [id])
+  manager   User?    @relation("UserManager", fields: [managerId], references: [id])
+  reports   User[]   @relation("UserManager")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,6 +38,11 @@ model User {
   notifications         Notification[]
   overriddenExpenses    Expense[]                @relation("AdminOverrides")
   sendPasswordTokens    SendPasswordToken[]
+  sentMessages          ChatMessage[]  @relation("SentMessages")
+  receivedMessages      ChatMessage[]  @relation("ReceivedMessages")
+  assignedRules         ApprovalRule[] @relation("AssignedRules")
+  managedRules          ApprovalRule[] @relation("ManagedRules")
+  ruleApprovers         ApprovalRuleApprover[] @relation("RuleApprovers")
 
   @@unique([email, companyId])
 }
@@ -92,22 +100,33 @@ enum ExpenseStatus {
 }
 
 model ApprovalRule {
-  id              String   @id @default(cuid())
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id])
-  name            String
-  description     String?
-  minAmount       Decimal  @db.Decimal(10, 2)
-  maxAmount       Decimal? @db.Decimal(10, 2)
-  stepOrder       Int
-  approverRole    Role
-  approverId      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  companyId             String
+  company               Company  @relation(fields: [companyId], references: [id])
+  name                  String
+  description           String?
+  assignedUserId        String?
+  assignedUser          User?    @relation("AssignedRules", fields: [assignedUserId], references: [id])
+  managerId             String?
+  manager               User?    @relation("ManagedRules", fields: [managerId], references: [id])
+  isManagerApprover     Boolean  @default(false)
+  approversSequence     Boolean  @default(false)
+  minApprovalPercentage Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
+  approvers       ApprovalRuleApprover[]
   approvalActions ApprovalAction[]
+}
 
-  @@unique([companyId, stepOrder])
+model ApprovalRuleApprover {
+  id       String @id @default(cuid())
+  ruleId   String
+  rule     ApprovalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation("RuleApprovers", fields: [userId], references: [id])
+  stepOrder Int
+  required Boolean @default(false)
 }
 
 model ApprovalAction {
@@ -164,4 +183,17 @@ model SendPasswordToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  companyId  String
+  senderId   String
+  receiverId String
+  message    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages",     fields: [senderId],   references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }

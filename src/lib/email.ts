@@ -63,6 +63,35 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   return { success: false, error: "SMTP not configured" }
 }
 
+export async function sendWelcomeEmail(
+  email: string,
+  name: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> {
+  const html = `
+    <h1>Welcome to Reimbursor, ${name}!</h1>
+    <p>Your account has been created by your company admin.</p>
+    <p>Use the credentials below to log in:</p>
+    <table style="margin: 16px 0; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 4px 12px 4px 0; font-weight: bold;">Email:</td>
+        <td style="padding: 4px 0;">${email}</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 12px 4px 0; font-weight: bold;">Password:</td>
+        <td style="padding: 4px 0; font-family: monospace; font-size: 16px;">${password}</td>
+      </tr>
+    </table>
+    <p>Please change your password after your first login.</p>
+  `
+
+  return sendEmail({
+    to: email,
+    subject: "Your Reimbursor account credentials",
+    html,
+  })
+}
+
 export async function sendPasswordResetEmail(
   email: string,
   token: string,
