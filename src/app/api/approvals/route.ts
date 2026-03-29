@@ -20,6 +20,10 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
+  if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const pendingApprovals = await prisma.approvalAction.findMany({
     where: {
       approverId: session.user.id,
@@ -76,6 +80,10 @@ export async function POST(request: Request) {
 
     if (!expense) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 })
+    }
+
+    if (expense.companyId !== session.user.companyId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const workflowEngine = await createWorkflowEngine(expenseId, session.user.companyId)

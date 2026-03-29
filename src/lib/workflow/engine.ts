@@ -5,6 +5,7 @@ export interface WorkflowStep {
   id: string
   stepOrder: number
   name: string
+  approverIds: string[]
   type: StepType
   minApprovalPercent: number
   specificApproverId: string | null
@@ -93,13 +94,21 @@ export class WorkflowEngine {
         return { success: true, workflowId: undefined }
       }
 
-      await this.createApprovalActionsForStep(workflow.steps[0], expense)
+      const firstStepOrder = workflow.steps[0].stepOrder
+      const createdActions = await this.createApprovalActionsForStep(workflow.steps[0], expense)
+
+      if (createdActions.length === 0) {
+        return {
+          success: false,
+          error: `No approvers resolved for workflow step ${firstStepOrder}`,
+        }
+      }
 
       await prisma.expense.update({
         where: { id: this.expenseId },
         data: {
           status: ExpenseStatus.PENDING,
-          currentWorkflowStep: 0,
+          currentWorkflowStep: firstStepOrder,
         },
       })
 
@@ -122,8 +131,9 @@ export class WorkflowEngine {
     }
   ): Promise<ApprovalActionInput[]> {
     const approverIds: string[] = []
-
-    if (step.specificApproverId) {
+    if (step.approverIds?.length) {
+      approverIds.push(...step.approverIds)
+    } else if (step.specificApproverId) {
       approverIds.push(step.specificApproverId)
     } else if (step.approverRole) {
       const users = await prisma.user.findMany({
@@ -146,7 +156,9 @@ export class WorkflowEngine {
     }
 
     const actions: ApprovalActionInput[] = []
-    for (const approverId of approverIds) {
+    const uniqueApproverIds = Array.from(new Set(approverIds))
+
+    for (const approverId of uniqueApproverIds) {
       await prisma.approvalAction.create({
         data: {
           expenseId: this.expenseId,
@@ -240,7 +252,19 @@ export class WorkflowEngine {
     }
 
     if (stepResult.shouldMoveToNext) {
-      await this.moveToNextStep()
+      const nextStepResult = await this.moveToNextStep()
+      if (!nextStepResult.success) {
+        return { success: false, error: nextStepResult.error || "Failed moving to next step" }
+      }
+
+      if (nextStepResult.expenseApproved) {
+        return {
+          success: true,
+          stepComplete: true,
+          expenseComplete: true,
+          newStatus: ExpenseStatus.APPROVED,
+        }
+      }
       return {
         success: true,
         stepComplete: true,

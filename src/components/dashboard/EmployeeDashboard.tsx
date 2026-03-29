@@ -4,9 +4,12 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { StatusBadge } from "./StatusBadge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/empty-state"
 import { formatCurrency } from "@/lib/formatCurrency"
-import { ChevronRight, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, FileText, Clock, CheckCircle2, Send } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Expense {
   id: string
@@ -28,7 +31,14 @@ interface Props {
   expenses: Expense[]
 }
 
-export function EmployeeDashboard({ currency, toSubmit, underValidation, toBeReimbursed, expenses }: Props) {
+const statusVariants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+  DRAFT: "secondary",
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "destructive",
+}
+
+export function EmployeeDashboard({ userName, currency, toSubmit, underValidation, toBeReimbursed, expenses }: Props) {
   const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -40,115 +50,131 @@ export function EmployeeDashboard({ currency, toSubmit, underValidation, toBeRei
     router.refresh()
   }
 
-  const total = expenses.reduce((s, e) => s + e.convertedAmount, 0)
+  const summaryCards = [
+    {
+      label: "To Submit",
+      value: formatCurrency(toSubmit, currency),
+      icon: Send,
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
+      description: "drafts ready to send",
+    },
+    {
+      label: "Under Validation",
+      value: formatCurrency(underValidation, currency),
+      icon: Clock,
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      description: "awaiting approval",
+    },
+    {
+      label: "To Be Reimbursed",
+      value: formatCurrency(toBeReimbursed, currency),
+      icon: CheckCircle2,
+      iconBg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      description: "approved and pending payment",
+    },
+  ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Expenses</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-page-title">Welcome back, {userName.split(" ")[0]}</h1>
+          <p className="text-body-muted mt-1">Track and manage your expense reports.</p>
+        </div>
         <Link href="/expenses/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" /> New Expense
+          <Button className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" /> New Expense
           </Button>
         </Link>
       </div>
 
-      {/* Summary strip */}
-      <div className="grid grid-cols-3 divide-x border rounded-lg bg-card">
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(toSubmit, currency)}</p>
-            <p className="text-sm text-muted-foreground mt-1">to submit</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(underValidation, currency)}</p>
-            <p className="text-sm text-muted-foreground mt-1">under validation</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-green-600">{formatCurrency(toBeReimbursed, currency)}</p>
-            <p className="text-sm text-muted-foreground mt-1">to be reimbursed</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </div>
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <Card key={card.label} className="shadow-elevation-2 border-border/70 hover:shadow-elevation-3 transition-shadow duration-200">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-label">{card.label}</p>
+                    <p className="text-xl font-bold tracking-tight text-foreground leading-none mt-2">{card.value}</p>
+                    <p className="text-xs text-muted-foreground pt-0.5">{card.description}</p>
+                  </div>
+                  <div className={cn("mt-0.5 p-2.5 rounded-lg shrink-0", card.iconBg)}>
+                    <Icon className={cn("w-5 h-5", card.iconColor)} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">Description</th>
-              <th className="px-4 py-3 text-left font-medium">Category</th>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-right font-medium">Amount</th>
-              <th className="px-4 py-3 text-center font-medium">Status</th>
-              <th className="px-4 py-3 text-center font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {expenses.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                  No expenses yet.{" "}
-                  <Link href="/expenses/new" className="text-primary underline">Create one</Link>
-                </td>
-              </tr>
-            )}
-            {expenses.map((e) => (
-              <tr key={e.id} className="hover:bg-muted/40 transition-colors">
-                <td className="px-4 py-3">
-                  <Link href={`/expenses/${e.id}`} className="font-medium hover:underline">
-                    {e.description}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{e.category}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {new Date(e.date).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3 text-right font-medium">
-                  {formatCurrency(e.convertedAmount, currency)}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <StatusBadge status={e.status} />
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <Link href={`/expenses/${e.id}`}>
-                      <Button variant="ghost" size="sm">View</Button>
+      {/* Expense list */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-section-header">My Expenses</h2>
+          <Link href="/expenses">
+            <Button variant="ghost" size="sm" className="text-primary text-xs gap-1">
+              View all
+            </Button>
+          </Link>
+        </div>
+
+        <Card className="shadow-elevation-2 border-border/70">
+          <CardContent className="p-0">
+            {expenses.length === 0 ? (
+              <EmptyState
+                icon={<FileText className="w-8 h-8" />}
+                title="No expenses yet"
+                description="Create your first expense to get started"
+                action={{ label: "New Expense", onClick: () => { window.location.href = "/expenses/new" } }}
+              />
+            ) : (
+              <div className="divide-y divide-border">
+                {expenses.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between p-4 hover:bg-surface transition-colors group">
+                    <Link href={`/expenses/${e.id}`} className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center shrink-0">
+                        <span className="text-sm font-semibold text-muted-foreground">{e.category.charAt(0)}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate hover:text-primary transition-colors">{e.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {e.category} &middot; {new Date(e.date).toLocaleDateString()}
+                        </p>
+                      </div>
                     </Link>
-                    {e.status === "DRAFT" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(e.id)}
-                        disabled={deleting === e.id}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                      <span className="font-semibold text-sm hidden sm:block">
+                        {formatCurrency(e.convertedAmount, currency)}
+                      </span>
+                      <Badge variant={statusVariants[e.status] || "secondary"}>
+                        {e.status.toLowerCase()}
+                      </Badge>
+                      {e.status === "DRAFT" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDelete(e.id)}
+                          disabled={deleting === e.id}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          {expenses.length > 0 && (
-            <tfoot className="bg-muted/50">
-              <tr>
-                <td colSpan={3} className="px-4 py-3 font-semibold text-right">Total</td>
-                <td className="px-4 py-3 text-right font-bold">{formatCurrency(total, currency)}</td>
-                <td colSpan={2} />
-              </tr>
-            </tfoot>
-          )}
-        </table>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

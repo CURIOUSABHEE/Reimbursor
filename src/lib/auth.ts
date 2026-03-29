@@ -45,19 +45,26 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const email = credentials.email.toLowerCase()
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email }
         })
 
         if (!user) {
+          console.log("User not found for email:", credentials.email)
           return null
         }
 
+        console.log("Found user, checking password...")
         const isPasswordValid = await compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
+          console.log("Invalid password for user:", credentials.email)
           return null
         }
+
+        console.log("Password valid, returning user")
 
         return {
           id: user.id,

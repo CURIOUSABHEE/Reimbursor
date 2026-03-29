@@ -3,15 +3,9 @@
 import { useEffect, useState } from 'react'
 import { StepBuilder, WorkflowStep, User } from '@/components/workflow-builder'
 
-const mockUsers: User[] = [
-  { id: '1', name: 'John Manager', email: 'john@company.com', role: 'MANAGER' },
-  { id: '2', name: 'Sarah Finance', email: 'sarah@company.com', role: 'MANAGER' },
-  { id: '3', name: 'Mike Director', email: 'mike@company.com', role: 'ADMIN' },
-  { id: '4', name: 'Lisa HR', email: 'lisa@company.com', role: 'MANAGER' },
-]
-
 export default function WorkflowBuilderPage() {
   const [steps, setSteps] = useState<WorkflowStep[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -26,6 +20,16 @@ export default function WorkflowBuilderPage() {
               id: s.id || `step_${s.stepOrder}`,
             })))
           }
+        }
+
+        const usersResponse = await fetch('/api/users')
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json()
+          setUsers(
+            (Array.isArray(usersData) ? usersData : []).filter(
+              (u) => u.role === 'MANAGER' || u.role === 'ADMIN'
+            )
+          )
         }
       } catch (error) {
         console.error('Failed to fetch workflow:', error)
@@ -63,21 +67,21 @@ export default function WorkflowBuilderPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground text-sm">Loading workflow...</div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Approval Workflow Builder</h1>
-        <p className="text-muted-foreground mt-1">
-          Configure how expense approvals flow through your organization
+    <div className="space-y-8 max-w-3xl">
+      <div>
+        <h1 className="text-page-title">Approval Workflow</h1>
+        <p className="text-body-muted mt-1">
+          Configure how expense approvals flow through your organization.
         </p>
       </div>
 
-      <StepBuilder users={mockUsers} onSave={handleSave} initialSteps={steps} />
+      <StepBuilder users={users} onSave={handleSave} initialSteps={steps} />
     </div>
   )
 }

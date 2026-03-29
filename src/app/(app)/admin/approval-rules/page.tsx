@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, Plus, GripVertical } from "lucide-react"
+import { Trash2, Plus, GripVertical, ShieldCheck } from "lucide-react"
 
 interface User {
   id: string
@@ -134,20 +136,22 @@ export default function ApprovalRulesPage() {
   const managers = users.filter(u => u.role === "MANAGER" || u.role === "ADMIN")
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Approval Rules</h1>
-          <p className="text-muted-foreground text-sm">Define who approves expenses and in what order</p>
+          <h1 className="text-page-title">Approval Rules</h1>
+          <p className="text-body-muted mt-1">Define who approves expenses and in what order.</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-1" /> New Rule
+        <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5 shrink-0">
+          <Plus className="h-4 w-4" /> New Rule
         </Button>
       </div>
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSave} className="border rounded-lg p-6 space-y-6 bg-card">
+        <Card className="shadow-elevation-2 border-border/70">
+          <CardContent className="p-6">
+        <form onSubmit={handleSave} className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             {/* Left column */}
             <div className="space-y-4">
@@ -297,46 +301,72 @@ export default function ApprovalRulesPage() {
             </Button>
           </div>
         </form>
+        </CardContent>
+        </Card>
       )}
 
       {/* Rules list */}
       {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground text-sm">Loading...</p>
       ) : rules.length === 0 ? (
-        <div className="border rounded-lg p-8 text-center text-muted-foreground">
-          No approval rules yet. Create one to get started.
-        </div>
+        <Card className="shadow-elevation-2 border-border/70">
+          <CardContent className="py-16 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold">No approval rules yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Create a rule to define who approves expenses.</p>
+            </div>
+            <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5 mt-1">
+              <Plus className="h-4 w-4" /> New Rule
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
           {rules.map(rule => (
-            <div key={rule.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
+            <Card key={rule.id} className="shadow-elevation-2 border-border/70 hover:shadow-elevation-3 transition-shadow duration-200">
+              <CardContent className="p-5 space-y-3">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-semibold">{rule.name}</p>
-                  {rule.description && <p className="text-sm text-muted-foreground">{rule.description}</p>}
+                  {rule.description && <p className="text-sm text-muted-foreground mt-0.5">{rule.description}</p>}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(rule.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDelete(rule.id)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                {rule.assignedUser && <span>User: <strong className="text-foreground">{rule.assignedUser.name}</strong></span>}
-                {rule.manager && <span>Manager: <strong className="text-foreground">{rule.manager.name}</strong></span>}
-                {rule.isManagerApprover && <span className="text-blue-600">Manager is approver</span>}
-                {rule.approversSequence && <span className="text-purple-600">Sequential</span>}
-                {rule.minApprovalPercentage && <span>{rule.minApprovalPercentage}% approval required</span>}
+              <div className="flex flex-wrap gap-2 text-xs">
+                {rule.assignedUser && (
+                  <Badge variant="secondary">User: {rule.assignedUser.name}</Badge>
+                )}
+                {rule.manager && (
+                  <Badge variant="secondary">Manager: {rule.manager.name}</Badge>
+                )}
+                {rule.isManagerApprover && (
+                  <Badge variant="default">Manager approver</Badge>
+                )}
+                {rule.approversSequence && (
+                  <Badge variant="default">Sequential</Badge>
+                )}
+                {rule.minApprovalPercentage && (
+                  <Badge variant="secondary">{rule.minApprovalPercentage}% required</Badge>
+                )}
               </div>
               {rule.approvers.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {rule.approvers.map((a, i) => (
-                    <span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
-                      {i + 1}. {a.user.name}
-                      {a.required && <span className="text-green-600 font-medium">✓ required</span>}
+                    <span key={a.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface rounded-lg text-xs font-medium">
+                      <span className="text-muted-foreground">{i + 1}.</span>
+                      {a.user.name}
+                      {a.required && <span className="text-emerald-600">✓</span>}
                     </span>
                   ))}
                 </div>
               )}
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

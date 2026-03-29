@@ -29,6 +29,10 @@ export async function POST(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 })
     }
 
+    if (expense.companyId !== session.user.companyId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     if (expense.employeeId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

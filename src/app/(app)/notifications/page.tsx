@@ -29,10 +29,8 @@ export default async function NotificationsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-3xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">
-          Stay updated on your expense approvals
-        </p>
+        <h1 className="text-page-title">Notifications</h1>
+        <p className="text-body-muted mt-1">Stay updated on your expense approvals.</p>
       </div>
 
       <NotificationList

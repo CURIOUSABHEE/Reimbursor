@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import { ExpenseStatus } from "@prisma/client"
 
 export async function GET(
   request: Request,
@@ -13,10 +14,10 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const expense = await prisma.expense.findUnique({
-    where: { id: params.id },
+  const expense = await prisma.expense.findFirst({
+    where: { id: params.id, companyId: session.user.companyId },
     include: {
-      employee: { select: { id: true, name: true, email: true } },
+      employee: { select: { id: true, name: true, email: true, managerId: true } },
       approvalActions: {
         include: { approver: { select: { id: true, name: true } } },
         orderBy: { stepOrder: "asc" },
@@ -28,6 +29,15 @@ export async function GET(
 
   if (!expense) {
     return NextResponse.json({ error: "Expense not found" }, { status: 404 })
+  }
+
+  const canAccess =
+    session.user.role === "ADMIN" ||
+    expense.employeeId === session.user.id ||
+    (session.user.role === "MANAGER" && expense.employee.managerId === session.user.id)
+
+  if (!canAccess) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   return NextResponse.json(expense)
@@ -46,8 +56,19 @@ export async function PATCH(
   const body = await request.json()
   const { status } = body
 
-  const expense = await prisma.expense.findUnique({
-    where: { id: params.id },
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  if (!Object.values(ExpenseStatus).includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+  }
+
+  const expense = await prisma.expense.findFirst({
+    where: {
+      id: params.id,
+      companyId: session.user.companyId,
+    },
   })
 
   if (!expense) {
@@ -56,7 +77,7 @@ export async function PATCH(
 
   const updated = await prisma.expense.update({
     where: { id: params.id },
-    data: { status },
+    data: { status: status as ExpenseStatus },
   })
 
   return NextResponse.json(updated)
@@ -72,8 +93,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const expense = await prisma.expense.findUnique({
-    where: { id: params.id },
+  const expense = await prisma.expense.findFirst({
+    where: {
+      id: params.id,
+      companyId: session.user.companyId,
+    },
   })
 
   if (!expense) {

@@ -5,9 +5,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { StatusBadge } from "./StatusBadge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/empty-state"
 import { formatCurrency } from "@/lib/formatCurrency"
-import { Plus, CheckCircle, XCircle, Clock } from "lucide-react"
+import { Plus, CheckCircle2, XCircle, Clock, ArrowRight, CheckSquare, FileText } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Expense {
   id: string
@@ -34,6 +37,13 @@ interface Props {
   pendingApprovals: PendingExpense[]
 }
 
+const statusVariants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+  DRAFT: "secondary",
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "destructive",
+}
+
 export function ManagerDashboard({ userName, currency, pendingApprovalCount, approvedByMe, rejectedByMe, myExpenses, pendingApprovals }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<"mine" | "approvals">("approvals")
@@ -52,152 +62,230 @@ export function ManagerDashboard({ userName, currency, pendingApprovalCount, app
     router.refresh()
   }
 
+  const stats = [
+    {
+      label: "Pending Approvals",
+      value: pendingApprovalCount,
+      icon: Clock,
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      urgent: pendingApprovalCount > 0,
+    },
+    {
+      label: "Approved by Me",
+      value: approvedByMe,
+      icon: CheckCircle2,
+      iconBg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      urgent: false,
+    },
+    {
+      label: "Rejected by Me",
+      value: rejectedByMe,
+      icon: XCircle,
+      iconBg: "bg-red-50",
+      iconColor: "text-red-600",
+      urgent: false,
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome, {userName}</h1>
-          <p className="text-muted-foreground text-sm">Manager Dashboard</p>
+          <h1 className="text-page-title">Welcome back, {userName.split(" ")[0]}</h1>
+          <p className="text-body-muted mt-1">Here&rsquo;s your team&rsquo;s expense activity.</p>
         </div>
         <Link href="/expenses/new">
-          <Button size="sm"><Plus className="h-4 w-4 mr-1" /> New Expense</Button>
+          <Button className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" /> New Expense
+          </Button>
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="border rounded-lg p-5 flex items-center gap-4">
-          <Clock className="h-8 w-8 text-yellow-500 shrink-0" />
-          <div>
-            <p className="text-2xl font-bold">{pendingApprovalCount}</p>
-            <p className="text-sm text-muted-foreground">Pending approvals</p>
-          </div>
-        </div>
-        <div className="border rounded-lg p-5 flex items-center gap-4">
-          <CheckCircle className="h-8 w-8 text-green-500 shrink-0" />
-          <div>
-            <p className="text-2xl font-bold">{approvedByMe}</p>
-            <p className="text-sm text-muted-foreground">Approved by me</p>
-          </div>
-        </div>
-        <div className="border rounded-lg p-5 flex items-center gap-4">
-          <XCircle className="h-8 w-8 text-red-500 shrink-0" />
-          <div>
-            <p className="text-2xl font-bold">{rejectedByMe}</p>
-            <p className="text-sm text-muted-foreground">Rejected by me</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <Card
+              key={stat.label}
+              className={cn(
+                "shadow-elevation-2 border-border/70 hover:shadow-elevation-3 transition-shadow duration-200",
+                stat.urgent && "border-amber-200 bg-amber-50/30"
+              )}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <p className="text-label">{stat.label}</p>
+                    <p className="text-metric">{stat.value}</p>
+                  </div>
+                  <div className={cn("mt-0.5 p-2.5 rounded-lg shrink-0", stat.iconBg)}>
+                    <Icon className={cn("w-5 h-5", stat.iconColor)} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b border-border">
         {(["approvals", "mine"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+            className={cn(
+              "px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+              tab === t
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
           >
-            {t === "approvals" ? `Pending Approvals (${pendingApprovalCount})` : "My Expenses"}
+            {t === "approvals"
+              ? `Pending Approvals${pendingApprovalCount > 0 ? ` (${pendingApprovalCount})` : ""}`
+              : "My Expenses"}
           </button>
         ))}
       </div>
 
       {tab === "approvals" && (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Employee</th>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-right font-medium">Amount</th>
-                <th className="px-4 py-3 text-center font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {pendingApprovals.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No pending approvals</td></tr>
-              )}
-              {pendingApprovals.map((e) => (
-                <tr key={e.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-3 font-medium">{e.employee.name}</td>
-                  <td className="px-4 py-3">
-                    <Link href={`/expenses/${e.id}`} className="hover:underline">{e.description}</Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(e.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(e.convertedAmount, currency)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-700 border-green-300 hover:bg-green-50"
-                        disabled={acting === e.id}
-                        onClick={() => handleAction(e.id, "APPROVED")}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-700 border-red-300 hover:bg-red-50"
-                        disabled={acting === e.id}
-                        onClick={() => handleAction(e.id, "REJECTED")}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {pendingApprovals.length > 0 && (
-            <div className="p-4 border-t bg-muted/30">
-              <Textarea
-                placeholder="Optional comment for approval/rejection..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={2}
-                className="text-sm"
-              />
-            </div>
+        <div className="space-y-4">
+          {pendingApprovals.length === 0 ? (
+            <Card>
+              <CardContent className="py-16">
+                <EmptyState
+                  icon={<CheckSquare className="w-8 h-8" />}
+                  title="All caught up"
+                  description="No pending approvals right now. Check back later."
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="shadow-elevation-2 border-border/70">
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
+                    {pendingApprovals.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between p-4 hover:bg-surface transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <Link href={`/expenses/${e.id}`} className="font-medium hover:text-primary transition-colors truncate block">
+                              {e.description}
+                            </Link>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {e.employee.name} &middot; {new Date(e.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                          <span className="font-semibold text-sm hidden sm:block">
+                            {formatCurrency(e.convertedAmount, currency)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                            disabled={acting === e.id}
+                            onClick={() => handleAction(e.id, "APPROVED")}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-700 border-red-200 hover:bg-red-50 hover:border-red-300"
+                            disabled={acting === e.id}
+                            onClick={() => handleAction(e.id, "REJECTED")}
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium text-foreground block mb-2">
+                    Comment <span className="text-muted-foreground font-normal">(optional)</span>
+                  </label>
+                  <Textarea
+                    placeholder="Add a comment for your approval or rejection..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Link href="/approvals">
+                  <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                    View all in Approvals
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {tab === "mine" && (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-left font-medium">Category</th>
-                <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-right font-medium">Amount</th>
-                <th className="px-4 py-3 text-center font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {myExpenses.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No expenses yet</td></tr>
-              )}
-              {myExpenses.map((e) => (
-                <tr key={e.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-3">
-                    <Link href={`/expenses/${e.id}`} className="font-medium hover:underline">{e.description}</Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{e.category}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(e.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(e.convertedAmount, currency)}</td>
-                  <td className="px-4 py-3 text-center"><StatusBadge status={e.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Card className="shadow-elevation-2 border-border/70">
+          <CardContent className="p-0">
+            {myExpenses.length === 0 ? (
+              <EmptyState
+                icon={<FileText className="w-8 h-8" />}
+                title="No expenses yet"
+                description="Create your first expense to get started"
+                action={{ label: "New Expense", onClick: () => { window.location.href = "/expenses/new" } }}
+              />
+            ) : (
+              <div className="divide-y divide-border">
+                {myExpenses.map((e) => (
+                  <Link
+                    key={e.id}
+                    href={`/expenses/${e.id}`}
+                    className="flex items-center justify-between p-4 hover:bg-surface transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center shrink-0">
+                        <span className="text-sm font-semibold text-muted-foreground">{e.category.charAt(0)}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{e.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {e.category} &middot; {new Date(e.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                      <span className="font-semibold text-sm hidden sm:block">
+                        {formatCurrency(e.convertedAmount, currency)}
+                      </span>
+                      <Badge variant={statusVariants[e.status] || "secondary"}>
+                        {e.status.toLowerCase()}
+                      </Badge>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   )

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
   :root {
@@ -229,6 +229,103 @@
 
   .transition-surface {
     @apply transition-all duration-150 ease-out;
+  }
+
+  /* ─────────────────────────────────────
+     Enterprise / dense table utilities
+     ───────────────────────────────────── */
+
+  /* Dense table row — 44px height */
+  .tr-dense td,
+  .tr-dense th {
+    padding-top: 0.625rem;    /* 10px */
+    padding-bottom: 0.625rem;
+    padding-left: 0.75rem;    /* 12px */
+    padding-right: 0.75rem;
+    font-size: 0.8125rem;     /* 13px */
+    line-height: 1.4;
+  }
+
+  /* Sticky table header */
+  .thead-sticky th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: hsl(var(--surface-container-high));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* Enterprise summary strip */
+  .summary-strip {
+    display: flex;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: hsl(var(--card));
+  }
+
+  .summary-strip-item {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-right: 1px solid hsl(var(--border));
+    min-width: 0;
+  }
+
+  .summary-strip-item:last-child {
+    border-right: none;
+  }
+
+  .summary-strip-item:hover {
+    background: hsl(var(--surface-container));
+  }
+
+  .summary-strip-item.active {
+    background: hsl(var(--primary) / 0.06);
+    border-bottom: 2px solid hsl(var(--primary));
+  }
+
+  /* Enterprise toolbar */
+  .enterprise-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--surface-container-low));
+    flex-wrap: wrap;
+  }
+
+  /* Inline action buttons — appear on row hover */
+  .row-actions {
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+
+  tr:hover .row-actions,
+  .group:hover .row-actions {
+    opacity: 1;
+  }
+
+  /* Status pill — compact */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .status-pill-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    flex-shrink: 0;
   }
 }
 

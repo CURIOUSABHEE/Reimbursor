@@ -16,8 +16,31 @@ export async function GET() {
     select: { currency: true },
   })
 
+  let whereClause: { companyId: string; employeeId?: { in: string[] } | string } = {
+    companyId: session.user.companyId,
+  }
+
+  if (session.user.role === "EMPLOYEE") {
+    whereClause = {
+      companyId: session.user.companyId,
+      employeeId: session.user.id,
+    }
+  } else if (session.user.role === "MANAGER") {
+    const reports = await prisma.user.findMany({
+      where: {
+        companyId: session.user.companyId,
+        managerId: session.user.id,
+      },
+      select: { id: true },
+    })
+    whereClause = {
+      companyId: session.user.companyId,
+      employeeId: { in: [session.user.id, ...reports.map((r) => r.id)] },
+    }
+  }
+
   const expenses = await prisma.expense.findMany({
-    where: { companyId: session.user.companyId },
+    where: whereClause,
     include: {
       employee: { select: { id: true, name: true, email: true } },
       approvalActions: {

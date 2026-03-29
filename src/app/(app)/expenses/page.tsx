@@ -2,20 +2,15 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ExpenseList } from "@/components/ExpenseList"
+import { ExpenseTable } from "@/components/ExpenseTable"
 
 export default async function ExpensesPage() {
   const session = await getServerSession(authOptions)
-
-  if (!session) {
-    redirect("/login")
-  }
+  if (!session) redirect("/login")
 
   const expenses = await prisma.expense.findMany({
     where: { employeeId: session.user.id },
-    include: {
-      employee: { select: { name: true, email: true } },
-    },
+    include: { employee: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   })
 
@@ -25,7 +20,7 @@ export default async function ExpensesPage() {
   })
 
   return (
-    <ExpenseList
+    <ExpenseTable
       expenses={expenses.map((e) => ({
         ...e,
         submittedAmount: Number(e.submittedAmount),

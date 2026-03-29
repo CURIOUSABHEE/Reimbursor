@@ -15,7 +15,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const { name, email, password, companyName, companyCurrency } = parsed.data
+    const { name, email: rawEmail, password, companyName, companyCurrency } = parsed.data
+    const email = rawEmail.toLowerCase()
 
     const existingUser = await prisma.user.findUnique({
       where: { email },

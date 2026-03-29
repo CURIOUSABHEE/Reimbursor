@@ -62,12 +62,15 @@ export async function GET() {
     id: step.id,
     stepOrder: step.stepOrder,
     name: step.name,
-    approvers: [], 
-    ruleType: step.type === StepType.SEQUENTIAL 
-      ? "ALL" 
-      : step.type === StepType.ANY_ONE 
-        ? "SPECIFIC" 
-        : "PERCENTAGE",
+    approvers: step.approverIds,
+    ruleType:
+      step.type === StepType.SEQUENTIAL
+        ? "ALL"
+        : step.type === StepType.ANY_ONE
+          ? "SPECIFIC"
+          : step.specificApproverId
+            ? "HYBRID"
+            : "PERCENTAGE",
     percent: step.minApprovalPercent,
     specificApproverId: step.specificApproverId,
   }))
@@ -121,6 +124,21 @@ export async function POST(request: Request) {
     }
 
     const companyId = session.user.companyId
+    const allApproverIds = Array.from(new Set(steps.flatMap((step) => step.approvers || [])))
+    if (allApproverIds.length > 0) {
+      const approverCount = await prisma.user.count({
+        where: {
+          companyId,
+          id: { in: allApproverIds },
+        },
+      })
+      if (approverCount !== allApproverIds.length) {
+        return NextResponse.json(
+          { error: "One or more selected approvers are invalid for this company" },
+          { status: 400 }
+        )
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       const existingWorkflow = await tx.approvalWorkflow.findFirst({
@@ -150,6 +168,7 @@ export async function POST(request: Request) {
             workflowId: workflow.id,
             stepOrder: step.stepOrder,
             name: `Step ${step.stepOrder}`,
+            approverIds: step.approvers,
             type: mapRuleTypeToStepType(step.ruleType),
             minApprovalPercent: step.percent,
             specificApproverId: step.specificApproverId,

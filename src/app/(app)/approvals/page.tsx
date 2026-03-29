@@ -2,29 +2,21 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ApprovalList } from "@/components/ApprovalList"
+import { ApprovalTable } from "@/components/ApprovalTable"
 
 export default async function ApprovalsPage() {
   const session = await getServerSession(authOptions)
-
-  if (!session) {
-    redirect("/login")
-  }
+  if (!session) redirect("/login")
 
   if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
     redirect("/dashboard")
   }
 
   const pendingApprovals = await prisma.approvalAction.findMany({
-    where: {
-      approverId: session.user.id,
-      action: "PENDING",
-    },
+    where: { approverId: session.user.id, action: "PENDING" },
     include: {
       expense: {
-        include: {
-          employee: { select: { id: true, name: true, email: true } },
-        },
+        include: { employee: { select: { id: true, name: true, email: true } } },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -36,7 +28,7 @@ export default async function ApprovalsPage() {
   })
 
   return (
-    <ApprovalList
+    <ApprovalTable
       approvals={pendingApprovals.map((a) => ({
         ...a.expense,
         submittedAmount: Number(a.expense.submittedAmount),

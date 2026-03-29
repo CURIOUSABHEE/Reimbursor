@@ -123,6 +123,7 @@ model ApprovalStep {
   workflow           ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   stepOrder          Int
   name               String
+  approverIds        String[]         @default([])
   type               StepType         @default(SEQUENTIAL)
   minApprovalPercent Int              @default(100)
   specificApproverId String?
@@ -193,7 +194,7 @@ model ApprovalAction {
   ruleId String?
   rule   ApprovalRule? @relation(fields: [ruleId], references: [id], onDelete: Cascade)
 
-  @@unique([expenseId, stepOrder])
+  @@unique([expenseId, stepOrder, approverId])
   @@index([approverId, action])
   @@index([expenseId, action])
 }
