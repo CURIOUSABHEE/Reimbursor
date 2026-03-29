@@ -27,6 +27,8 @@ model User {
   role      Role     @default(EMPLOYEE)
   companyId String
   company   Company  @relation(fields: [companyId], references: [id])
+  managerId String?
+  manager   User?    @relation("ManagerEmployees", fields: [managerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,6 +37,7 @@ model User {
   notifications         Notification[]
   overriddenExpenses    Expense[]                @relation("AdminOverrides")
   sendPasswordTokens    SendPasswordToken[]
+  managedEmployees     User[]                   @relation("ManagerEmployees")
 
   @@unique([email, companyId])
 }
