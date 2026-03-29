@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
 import { Sidebar } from "@/components/Sidebar"
-import { Container } from "@/components/ui"
 
 export default function AppLayout({
   children,
@@ -13,13 +12,21 @@ export default function AppLayout({
   const { data: session } = useSession()
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="flex">
-        <Sidebar userRole={session?.user?.role} />
-        <Container className="flex-1 py-8">
-          {children}
-        </Container>
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar — fixed left column */}
+      <Sidebar userRole={session?.user?.role} />
+
+      {/* Main column — stretches to fill remaining width */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Utility top bar */}
+        <Navbar />
+
+        {/* Page content — centered, consistent horizontal padding */}
+        <main className="flex-1 px-6 py-8">
+          <div className="max-w-6xl mx-auto w-full">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )

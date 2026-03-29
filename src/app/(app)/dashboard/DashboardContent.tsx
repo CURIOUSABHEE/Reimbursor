@@ -5,19 +5,19 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { PageHeader, Section } from "@/components/ui/page-header"
 import { EmptyState, Skeleton } from "@/components/ui/empty-state"
 import { CompanySetupModal } from "@/components/CompanySetupModal"
 import { cn } from "@/lib/utils"
-import { 
-  Clock, 
-  CheckCircle2, 
+import {
+  Clock,
+  CheckCircle2,
   XCircle,
   Plus,
   ArrowRight,
   DollarSign,
   Receipt,
-  FileText
+  FileText,
+  TrendingUp,
 } from "lucide-react"
 
 interface Company {
@@ -62,8 +62,88 @@ interface DashboardContentProps {
   onShowSetupChange: (show: boolean) => void
 }
 
+/* ─────────────────────────────────────
+   Stat card component
+   ───────────────────────────────────── */
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  iconBg,
+  iconColor,
+}: {
+  label: string
+  value: number
+  icon: React.ComponentType<{ className?: string }>
+  iconBg: string
+  iconColor: string
+}) {
+  return (
+    <Card className="shadow-elevation-2 border-border/70 hover:shadow-elevation-3 transition-shadow duration-200">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <p className="text-label">{label}</p>
+            <p className="text-metric">{value}</p>
+          </div>
+          <div className={cn("mt-0.5 p-2.5 rounded-lg shrink-0", iconBg)}>
+            <Icon className={cn("w-5 h-5", iconColor)} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/* ─────────────────────────────────────
+   Status badge color map
+   ───────────────────────────────────── */
+function getStatusVariant(status: string): "success" | "destructive" | "warning" | "secondary" {
+  switch (status) {
+    case "APPROVED": return "success"
+    case "REJECTED": return "destructive"
+    case "PENDING":  return "warning"
+    default:         return "secondary"
+  }
+}
+
+function getStatusIconStyle(status: string) {
+  switch (status) {
+    case "APPROVED": return "bg-emerald-50 text-emerald-600"
+    case "REJECTED": return "bg-red-50 text-red-600"
+    case "PENDING":  return "bg-amber-50 text-amber-600"
+    default:         return "bg-gray-100 text-gray-500"
+  }
+}
+
+/* ─────────────────────────────────────
+   Loading skeleton
+   ───────────────────────────────────── */
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-9 w-32" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Skeleton className="h-64 rounded-lg lg:col-span-2" />
+        <Skeleton className="h-64 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────
+   Main dashboard component
+   ───────────────────────────────────── */
 export function DashboardContent({ company, showSetup, onShowSetupChange }: DashboardContentProps) {
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [data,    setData]    = useState<DashboardData | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -90,15 +170,8 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Dash
         fetch("/api/dashboard/data"),
       ])
 
-      if (sessionRes.ok) {
-        const sessionData = await sessionRes.json()
-        setSession(sessionData)
-      }
-
-      if (dataRes.ok) {
-        const dashData = await dataRes.json()
-        setData(dashData)
-      }
+      if (sessionRes.ok) setSession(await sessionRes.json())
+      if (dataRes.ok)    setData(await dataRes.json())
     } catch (error) {
       console.error("Failed to fetch dashboard:", error)
     } finally {
@@ -106,110 +179,99 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Dash
     }
   }
 
-  if (loading || !session) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-11 w-36" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  if (loading || !session) return <DashboardSkeleton />
 
   const stats = [
     {
       label: "Total Submitted",
-      value: data?.totalExpenses || 0,
+      value: data?.totalExpenses ?? 0,
       icon: Receipt,
-      color: "text-primary bg-primary/10",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
     },
     {
       label: "Pending Review",
-      value: data?.pendingCount || 0,
+      value: data?.pendingCount ?? 0,
       icon: Clock,
-      color: "text-amber-600 bg-amber-100",
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
     },
     {
       label: "Approved",
-      value: data?.approvedCount || 0,
+      value: data?.approvedCount ?? 0,
       icon: CheckCircle2,
-      color: "text-emerald-600 bg-emerald-100",
+      iconBg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
     },
     {
       label: "Rejected",
-      value: data?.rejectedCount || 0,
+      value: data?.rejectedCount ?? 0,
       icon: XCircle,
-      color: "text-red-600 bg-red-100",
+      iconBg: "bg-red-50",
+      iconColor: "text-red-600",
     },
   ]
 
+  const isManagerOrAdmin =
+    session.user.role === "MANAGER" || session.user.role === "ADMIN"
+
   return (
     <div className="space-y-8">
-      <PageHeader
-        title={`Welcome back, ${session.user.name?.split(" ")[0]}`}
-        description="Here's what's happening with your expenses"
-        action={
-          <Link href="/expenses/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              New Expense
-            </Button>
-          </Link>
-        }
-      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {stat.label}
-                    </p>
-                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                  </div>
-                  <div className={cn("p-2.5 rounded-xl", stat.color)}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+      {/* ── Page header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-page-title">
+            Welcome back, {session.user.name?.split(" ")[0]}
+          </h1>
+          <p className="text-body-muted mt-1">
+            Here&rsquo;s what&rsquo;s happening with your expenses today.
+          </p>
+        </div>
+        <Link href="/expenses/new">
+          <Button className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" />
+            New Expense
+          </Button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Section
-          title="Recent Expenses"
-          className="lg:col-span-2"
-          action={
+      {/* ── Stats grid ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
+      </div>
+
+      {/* ── Content grid ── */}
+      <div className={cn(
+        "grid gap-6",
+        isManagerOrAdmin ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
+      )}>
+
+        {/* Recent Expenses — 2/3 width when approvals panel is shown */}
+        <section className={cn("space-y-4", isManagerOrAdmin && "lg:col-span-2")}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-section-header">Recent Expenses</h2>
             <Link href="/expenses">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="gap-1 text-primary">
                 View all
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
-          }
-        >
-          <Card>
+          </div>
+
+          <Card className="shadow-elevation-2 border-border/70">
             <CardContent className="p-0">
               {!data?.expenses || data.expenses.length === 0 ? (
                 <EmptyState
-                  icon={<FileText className="w-8 h-8" />}
+                  icon={<FileText className="w-7 h-7" />}
                   title="No expenses yet"
                   description="Create your first expense to get started"
+                  className="py-10"
                   action={{
                     label: "Create expense",
-                    onClick: () => window.location.href = "/expenses/new"
+                    onClick: () => { window.location.href = "/expenses/new" },
                   }}
                 />
               ) : (
@@ -218,35 +280,27 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Dash
                     <Link
                       key={expense.id}
                       href={`/expenses/${expense.id}`}
-                      className="flex items-center justify-between p-4 hover:bg-surface transition-colors"
+                      className="flex items-center justify-between px-4 py-3.5 hover:bg-surface transition-colors duration-100"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center",
-                          expense.status === "APPROVED" ? "bg-emerald-100 text-emerald-600" :
-                          expense.status === "REJECTED" ? "bg-red-100 text-red-600" :
-                          expense.status === "PENDING" ? "bg-amber-100 text-amber-600" :
-                          "bg-surface text-muted-foreground"
+                          "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                          getStatusIconStyle(expense.status)
                         )}>
-                          <DollarSign className="w-5 h-5" />
+                          <DollarSign className="w-4 h-4" />
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate">
                             {expense.description}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            {expense.category} &middot; {expense.submittedCurrency} {expense.submittedAmount.toFixed(2)}
+                          <p className="text-body-muted text-xs mt-0.5">
+                            {expense.category} &middot;{" "}
+                            {expense.submittedCurrency}{" "}
+                            {expense.submittedAmount.toFixed(2)}
                           </p>
                         </div>
                       </div>
-                      <Badge 
-                        variant={
-                          expense.status === "APPROVED" ? "success" :
-                          expense.status === "REJECTED" ? "destructive" :
-                          expense.status === "PENDING" ? "warning" :
-                          "secondary"
-                        }
-                      >
+                      <Badge variant={getStatusVariant(expense.status)} className="ml-4 shrink-0">
                         {expense.status.toLowerCase()}
                       </Badge>
                     </Link>
@@ -255,44 +309,58 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Dash
               )}
             </CardContent>
           </Card>
-        </Section>
+        </section>
 
-        {(session.user.role === "MANAGER" || session.user.role === "ADMIN") && (
-          <Section
-            title="Pending Approvals"
-            action={
+        {/* Pending Approvals — 1/3 width, managers/admins only */}
+        {isManagerOrAdmin && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-section-header">Pending Approvals</h2>
               <Link href="/approvals">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="gap-1 text-primary">
                   View
-                  <ArrowRight className="w-4 h-4 ml-1" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
-            }
-          >
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className={cn(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3",
-                  (data?.pendingApprovals || 0) > 0 ? "bg-amber-100" : "bg-emerald-100"
-                )}>
-                  {(data?.pendingApprovals || 0) > 0 ? (
-                    <Clock className="w-7 h-7 text-amber-600" />
-                  ) : (
-                    <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+
+            <Card className="shadow-elevation-2 border-border/70">
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    (data?.pendingApprovals ?? 0) > 0
+                      ? "bg-amber-50"
+                      : "bg-emerald-50"
+                  )}>
+                    {(data?.pendingApprovals ?? 0) > 0 ? (
+                      <Clock className="w-6 h-6 text-amber-600" />
+                    ) : (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-metric">{data?.pendingApprovals ?? 0}</p>
+                    <p className="text-body-muted text-sm mt-1">
+                      {(data?.pendingApprovals ?? 0) > 0
+                        ? "waiting for your review"
+                        : "All caught up!"}
+                    </p>
+                  </div>
+
+                  {(data?.pendingApprovals ?? 0) > 0 && (
+                    <Link href="/approvals" className="w-full mt-1">
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        Review now
+                      </Button>
+                    </Link>
                   )}
                 </div>
-                <p className="text-3xl font-bold">
-                  {data?.pendingApprovals || 0}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {(data?.pendingApprovals || 0) > 0 
-                    ? "waiting for review"
-                    : "All caught up!"
-                  }
-                </p>
               </CardContent>
             </Card>
-          </Section>
+          </section>
         )}
       </div>
 
