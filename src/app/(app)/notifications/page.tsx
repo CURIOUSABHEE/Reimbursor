@@ -37,7 +37,7 @@ export default async function NotificationsPage() {
       <NotificationList
         notifications={notifications.map((n) => ({
           id: n.id,
-          type: n.type,
+          type: n.type as "INFO" | "EXPENSE_SUBMITTED" | "APPROVAL_REQUIRED" | "APPROVAL_ACTION" | "EXPENSE_APPROVED" | "EXPENSE_REJECTED" | "SYSTEM" | "STEP_ACTIVATED" | "STEP_COMPLETED",
           title: n.title,
           message: n.message,
           read: n.read,

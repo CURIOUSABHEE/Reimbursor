@@ -4,9 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PageHeader } from "@/components/ui/page-header"
 
 const EXPENSE_CATEGORIES = [
   { value: "TRAVEL", label: "Travel" },
@@ -75,13 +76,14 @@ export default function NewExpensePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <PageHeader
+        title="New Expense"
+        description="Submit a new expense for approval"
+      />
+
       <Card>
-        <CardHeader>
-          <CardTitle>New Expense</CardTitle>
-          <CardDescription>Submit a new expense for approval</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">
@@ -177,7 +179,7 @@ export default function NewExpensePage() {
               />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>

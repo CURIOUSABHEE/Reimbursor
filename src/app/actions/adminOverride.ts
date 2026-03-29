@@ -64,7 +64,7 @@ export async function adminOverrideExpense(input: {
         adminOverrideById: session.user.id,
         adminOverrideAt: new Date(),
         adminOverrideComment: input.comment ?? null,
-        currentApprovalStep: expense.approvalActions.length,
+        currentWorkflowStep: expense.approvalActions.length,
       },
     })
 

@@ -1,16 +1,16 @@
 # Reimbursor - Expense Management System
 
-A modern, multi-tenant expense management system built with Next.js 14, Prisma, and PostgreSQL. Designed for businesses to streamline employee expense submissions, approval workflows, and financial oversight.
+A premium, multi-tenant expense management system built with Next.js 14, Prisma, and PostgreSQL. Designed for businesses to streamline employee expense submissions, approval workflows, and financial oversight with an enterprise-grade user experience.
 
-## 🎯 Purpose
+## Purpose
 
 Reimbursor automates the expense reimbursement process by providing:
 
-- **For Employees**: Easy expense submission with multi-currency support
-- **For Managers**: Streamlined approval workflows with real-time notifications
-- **For Admins**: Complete visibility and override capabilities across the organization
+- **For Employees**: Easy expense submission with multi-currency support and real-time status tracking
+- **For Managers**: Multi-level approval workflows with sequential/parallel step support
+- **For Admins**: Complete visibility, powerful overrides, and user management across the organization
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 | Category | Technology |
 |----------|------------|
@@ -22,15 +22,15 @@ Reimbursor automates the expense reimbursement process by providing:
 | Monitoring | Sentry |
 | Validation | Zod |
 
-## 👥 User Roles
+## User Roles
 
 | Role | Capabilities |
 |------|--------------|
 | **Employee** | Submit expenses, view own expense history, receive status notifications |
 | **Manager** | Approve/reject team expenses, view pending approvals, see converted amounts |
-| **Admin** | View all company expenses, override any approval, manage users, set currency |
+| **Admin** | View all company expenses, override any approval, manage users, manage workflows |
 
-## 📋 Features
+## Features
 
 ### Authentication & Authorization
 
@@ -46,6 +46,7 @@ Reimbursor automates the expense reimbursement process by providing:
 - [x] **Role Assignment** - Assign Employee, Manager, or Admin roles
 - [x] **Manager Relationships** - Link employees to managers
 - [x] **User CRUD** - Create, read, update, delete users (Admin only)
+- [x] **User Dashboard** - View all users with role statistics
 
 ### Expense Management
 
@@ -55,15 +56,29 @@ Reimbursor automates the expense reimbursement process by providing:
 - [x] **Expense Categories** - Travel, Meals, Accommodation, Transportation, Supplies, Equipment, Other
 - [x] **Expense History** - View all submitted expenses with status
 - [x] **Expense Details** - View individual expense with full information
+- [x] **Idempotency Keys** - Prevent duplicate submissions
 
-### Approval Workflow
+### Multi-Level Approval Workflow
 
-- [x] **Draft to Pending** - Submit expense for approval
-- [x] **Approval Rules** - Configurable rules based on amount thresholds
-- [x] **Multi-step Approvals** - Sequential approval chains
-- [x] **Approve/Reject** - Managers can approve or reject expenses
-- [x] **Approval Comments** - Include comments with decisions
-- [x] **Workflow Progression** - Auto-advance when all approvers approve
+- [x] **ApprovalWorkflow Model** - Configurable company-level workflows
+- [x] **ApprovalStep Model** - Define sequential/parallel approval steps
+- [x] **Step Types**:
+  - `SEQUENTIAL` - Complete current step before next
+  - `PARALLEL` - Multiple approvers vote simultaneously
+  - `ANY_ONE` - Single approval/rejection ends the step
+- [x] **Conditional Rules**:
+  - Percentage-based approval (e.g., 60% required)
+  - Specific approver override (e.g., CFO required)
+  - Hybrid logic (percentage OR specific approver)
+- [x] **Workflow Engine** - Modular functions for:
+  - `createApprovalWorkflow()` - Initialize workflow
+  - `handleApprovalAction()` - Process decisions
+  - `evaluateStep()` - Calculate step completion
+  - `moveToNextStep()` - Advance workflow
+- [x] **Idempotency** - Prevent duplicate approval actions
+- [x] **State Transitions**:
+  - `PENDING → APPROVED → NEXT STEP`
+  - `REJECTED → TERMINATE FLOW`
 
 ### Admin Override
 
@@ -71,6 +86,15 @@ Reimbursor automates the expense reimbursement process by providing:
 - [x] **Force Approve/Reject** - Override any expense decision
 - [x] **Override Comments** - Record reason for override
 - [x] **Override Tracking** - Log who overrode and when
+
+### Admin Dashboard
+
+- [x] **Summary Cards** - Total, Pending, Overridden, Rejected counts
+- [x] **Advanced Filters** - Search, status, employee, date range
+- [x] **Export CSV** - Download expense data
+- [x] **Bulk Actions** - Select multiple for batch approve/reject
+- [x] **Pagination** - Navigate large datasets
+- [x] **Empty States** - Contextual guidance when no data
 
 ### Notifications System
 
@@ -82,56 +106,87 @@ Reimbursor automates the expense reimbursement process by providing:
   - `APPROVAL_ACTION` - Expense approved/rejected
   - `EXPENSE_APPROVED` - Fully approved
   - `EXPENSE_REJECTED` - Rejected with reason
+  - `STEP_ACTIVATED` - New approval step started
+  - `STEP_COMPLETED` - Approval step finished
 - [x] **Idempotency** - No duplicate notifications
 - [x] **Deep Linking** - Click to navigate to expense
 - [x] **Mark as Read** - Individual or mark all
+
+### Editorial Enterprise Design System
+
+- [x] **Material 3-inspired surfaces** - Layered, tonal design
+- [x] **Typography Hierarchy** - Manrope headings, Inter body
+- [x] **Glassmorphic Navbar** - Backdrop blur effect
+- [x] **Active Sidebar** - Strong contrast with gradients
+- [x] **Premium Cards** - No hard borders, soft shadows
+- [x] **Gradient Buttons** - Indigo to purple primary actions
+- [x] **Minimalist Inputs** - Bottom-border only style
+- [x] **Status Badges** - Color-coded with icons
+- [x] **Timeline Component** - Visual approval flow
+- [x] **Smooth Transitions** - 200-300ms animations
 
 ### Production Features
 
 - [x] **Input Validation** - Zod schemas for all API endpoints
 - [x] **Error Boundaries** - Graceful error handling
-- [x] **Rate Limiting** - Prevent abuse
 - [x] **Structured Logging** - Performance monitoring
-- [x] **Sentry Integration** - Error tracking
 - [x] **Database Indexing** - Optimized queries
 - [x] **Query Optimization** - Parallel queries, N+1 prevention
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── (app)/                    # Protected routes (with navbar)
-│   │   ├── admin/expenses/       # Admin expense management
-│   │   ├── approvals/             # Manager approval page
-│   │   ├── dashboard/            # User dashboard
-│   │   ├── expenses/             # Expense list & detail
-│   │   │   ├── [id]/           # Expense detail page
-│   │   │   └── new/            # Create expense
+│   ├── (app)/                    # Protected routes (with navbar + sidebar)
+│   │   ├── admin/
+│   │   │   ├── expenses/         # Admin expense management
+│   │   │   ├── users/           # User management
+│   │   │   └── settings/        # Company settings
+│   │   ├── approvals/           # Manager approval page
+│   │   ├── dashboard/           # User dashboard
+│   │   ├── expenses/            # Expense list & detail
+│   │   │   ├── [id]/            # Expense detail page
+│   │   │   └── new/             # Create expense
 │   │   ├── notifications/       # Notification center
-│   │   └── layout.tsx          # App layout with navbar
-│   ├── (auth)/                   # Public routes (no navbar)
+│   │   └── layout.tsx          # App layout with navbar/sidebar
+│   ├── (auth)/                  # Public routes (no navbar)
 │   │   ├── forgot-password/      # Password reset request
-│   │   ├── login/              # Login page
-│   │   ├── reset-password/      # Password reset form
-│   │   ├── signup/             # Registration
+│   │   ├── login/               # Login page
+│   │   ├── reset-password/       # Password reset form
+│   │   ├── signup/              # Registration
 │   │   └── layout.tsx          # Auth layout
 │   ├── api/                     # API Routes
 │   │   ├── auth/               # Auth endpoints
-│   │   ├── approvals/           # Approval actions
+│   │   ├── approvals/          # Approval actions
+│   │   ├── company/            # Company management
+│   │   ├── dashboard/          # Dashboard data
 │   │   ├── expenses/           # Expense CRUD & submit
-│   │   ├── notifications/       # Notification management
+│   │   ├── notifications/      # Notification management
 │   │   ├── users/              # User management
-│   │   └── countries/          # Country/currency data
+│   │   └── workflow/           # Workflow management
+│   ├── actions/                # Server actions
 │   ├── global-error.tsx        # Global error boundary
-│   ├── layout.tsx              # Root layout
+│   ├── layout.tsx             # Root layout
 │   ├── page.tsx               # Root redirect
 │   └── providers.tsx           # Session provider
 ├── components/
 │   ├── ui/                     # shadcn/ui components
+│   │   ├── button.tsx          # Gradient primary buttons
+│   │   ├── card.tsx            # Surface-based cards
+│   │   ├── dialog.tsx          # Glassmorphic dialogs
+│   │   ├── input.tsx           # Minimalist inputs
+│   │   ├── table.tsx           # Borderless tables
+│   │   └── timeline.tsx         # Approval flow timeline
+│   ├── AdminExpenseTable.tsx   # Admin dashboard table
+│   ├── AdminOverrideDialog.tsx  # Admin override modal
+│   ├── CompanySetupModal.tsx   # Company setup wizard
+│   ├── ExpenseAmountCell.tsx   # Currency display
+│   ├── ExpenseList.tsx         # Expense listing
+│   ├── Navbar.tsx             # Glassmorphic navbar
 │   ├── Notifications.tsx       # Notification bell & list
-│   ├── Navbar.tsx             # Navigation bar
-│   └── ...
+│   ├── Sidebar.tsx            # Active sidebar
+│   └── SubmitExpenseButton.tsx  # Submit action
 └── lib/
     ├── auth.ts                 # NextAuth configuration
     ├── dashboard.ts            # Dashboard data fetching
@@ -143,10 +198,13 @@ src/
     │   └── index.ts
     ├── prisma.ts              # Prisma client
     ├── utils.ts               # Utility functions
-    └── validations.ts        # Zod schemas
+    ├── validations.ts         # Zod schemas
+    └── workflow/               # Approval workflow engine
+        ├── engine.ts           # WorkflowEngine class
+        └── index.ts
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Authentication
 
@@ -182,6 +240,14 @@ src/
 | GET | `/api/approvals` | Get pending approvals |
 | POST | `/api/approvals` | Approve or reject expense |
 
+### Workflow
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/workflow` | Get workflow configuration |
+| POST | `/api/workflow` | Create workflow |
+| PATCH | `/api/workflow/[id]` | Update workflow |
+
 ### Notifications
 
 | Method | Endpoint | Description |
@@ -189,15 +255,16 @@ src/
 | GET | `/api/notifications` | Get user notifications |
 | PATCH | `/api/notifications` | Mark as read |
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Models
 
 - **Company** - Multi-tenant organization
 - **User** - Employees with roles and manager relationships
 - **Expense** - Expense claims with multi-currency support
-- **ApprovalRule** - Configurable approval thresholds
-- **ApprovalAction** - Individual approval decisions
+- **ApprovalWorkflow** - Company-level workflow configurations
+- **ApprovalStep** - Individual steps with type, thresholds, approvers
+- **ApprovalAction** - Individual approval decisions with idempotency
 - **Notification** - User notifications with idempotency
 - **Receipt** - Attached receipt files
 - **SendPasswordToken** - Password reset tokens
@@ -205,15 +272,17 @@ src/
 ### Indexes
 
 ```prisma
-@@index([employeeId, status])      // Expense
-@@index([companyId, status])       // Expense
-@@index([createdAt])              // Expense
-@@index([userId, read])           // Notification
-@@index([userId, createdAt])      // Notification
+@@index([employeeId, status])       // Expense
+@@index([companyId, status])        // Expense
+@@index([createdAt])                // Expense
+@@index([userId, read])            // Notification
+@@index([userId, createdAt])       // Notification
 @@index([approverId, action])      // ApprovalAction
+@@index([expenseId, stepOrder])    // ApprovalAction
+@@index([workflowId, stepOrder])   // ApprovalStep
 ```
 
-## 🔐 Environment Variables
+## Environment Variables
 
 ```env
 # Database
@@ -236,7 +305,7 @@ DEFAULT_COUNTRY="United States"
 NEXT_PUBLIC_SENTRY_DSN=""
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -269,19 +338,20 @@ npm run dev
 | Employee | john@demo.com | demo1234 |
 | Employee | jane@demo.com | demo1234 |
 
-## 📈 Performance Optimizations
+## Performance Optimizations
 
 - **Parallel Queries** - Dashboard loads data with `Promise.all`
 - **Database Indexes** - Optimized for common queries
 - **Selective Fields** - Only fetch required data
 - **Idempotent Operations** - Prevent duplicate processing
 - **Event-driven Notifications** - Decoupled from business logic
+- **Memoized Filters** - Client-side filtering with useMemo
 
-## 🔒 Security Features
+## Security Features
 
 - Password hashing with bcrypt
 - JWT session strategy
 - Role-based middleware protection
 - Input validation with Zod
 - SQL injection prevention (Prisma)
-- Rate limiting on API endpoints
+- Idempotency keys for critical operations

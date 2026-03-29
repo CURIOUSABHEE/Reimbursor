@@ -5,6 +5,7 @@ export {
   notifyApprovalAction,
   notifyExpenseApproved,
   notifyExpenseRejected,
+  notifyStepActivated,
 } from "./notificationService"
 
 export {

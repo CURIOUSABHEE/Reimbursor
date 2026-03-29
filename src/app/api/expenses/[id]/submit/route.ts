@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { initializeNotificationHandlers, notifyExpenseSubmitted } from "@/lib/notifications"
+import { createWorkflowEngine } from "@/lib/workflow/engine"
 
 initializeNotificationHandlers()
 
@@ -39,52 +40,12 @@ export async function POST(
       )
     }
 
-    const rules = await prisma.approvalRule.findMany({
-      where: {
-        companyId: session.user.companyId,
-      },
-      orderBy: { stepOrder: "asc" },
-    })
+    const workflowEngine = await createWorkflowEngine(expenseId, session.user.companyId)
+    const result = await workflowEngine.createApprovalWorkflow()
 
-    const applicableRules = rules.filter((rule: { minAmount: unknown; maxAmount: unknown }) => {
-      const minAmount = Number(rule.minAmount)
-      const maxAmount = rule.maxAmount ? Number(rule.maxAmount) : null
-      const convertedAmount = Number(expense.convertedAmount)
-      
-      const minOk = !rule.minAmount || convertedAmount >= minAmount
-      const maxOk = !maxAmount || convertedAmount <= maxAmount
-      return minOk && maxOk
-    })
-
-    await prisma.$transaction(async (tx) => {
-      for (const rule of applicableRules) {
-        const approver = rule.approverId
-          ? await tx.user.findUnique({ where: { id: rule.approverId } })
-          : await tx.user.findFirst({
-              where: {
-                companyId: session.user.companyId,
-                role: rule.approverRole,
-              },
-            })
-
-        if (approver) {
-          await tx.approvalAction.create({
-            data: {
-              expenseId,
-              ruleId: rule.id,
-              approverId: approver.id,
-              action: "PENDING",
-              stepOrder: rule.stepOrder,
-            },
-          })
-        }
-      }
-
-      await tx.expense.update({
-        where: { id: expenseId },
-        data: { status: "PENDING" },
-      })
-    })
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
 
     await notifyExpenseSubmitted({
       expenseId,
@@ -94,7 +55,31 @@ export async function POST(
       companyId: session.user.companyId,
     })
 
-    return NextResponse.json({ success: true })
+    const pendingApprovers = await prisma.approvalAction.findMany({
+      where: {
+        expenseId,
+        action: "PENDING",
+      },
+      include: { approver: true },
+    })
+
+    for (const approver of pendingApprovers) {
+      await prisma.notification.create({
+        data: {
+          userId: approver.approverId,
+          expenseId,
+          type: "APPROVAL_REQUIRED",
+          title: "Approval Required",
+          message: `${expense.employee.name} submitted expense: "${expense.description}" for your approval.`,
+          idempotencyKey: `approval_required:${expenseId}:${approver.approverId}`,
+        },
+      })
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      workflowId: result.workflowId
+    })
   } catch (error) {
     console.error("Submit expense error:", error)
     return NextResponse.json(

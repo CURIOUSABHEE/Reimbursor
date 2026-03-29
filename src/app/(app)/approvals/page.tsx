@@ -36,25 +36,16 @@ export default async function ApprovalsPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Pending Approvals</h1>
-        <p className="text-muted-foreground">
-          Review and approve expense requests from your team
-        </p>
-      </div>
-
-      <ApprovalList
-        approvals={pendingApprovals.map((a) => ({
-          ...a.expense,
-          submittedAmount: Number(a.expense.submittedAmount),
-          convertedAmount: Number(a.expense.convertedAmount),
-          date: a.expense.date.toISOString(),
-          approvalActions: [],
-        }))}
-        companyCurrency={company?.currency || "USD"}
-        viewerRole={session.user.role as "ADMIN" | "MANAGER"}
-      />
-    </div>
+    <ApprovalList
+      approvals={pendingApprovals.map((a) => ({
+        ...a.expense,
+        submittedAmount: Number(a.expense.submittedAmount),
+        convertedAmount: Number(a.expense.convertedAmount),
+        date: a.expense.date.toISOString(),
+        approvalActions: [],
+      }))}
+      companyCurrency={company?.currency || "USD"}
+      viewerRole={session.user.role as "ADMIN" | "MANAGER"}
+    />
   )
 }

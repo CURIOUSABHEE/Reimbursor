@@ -3,11 +3,18 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { 
+  Bell, 
+  Check, 
+  X, 
+  Clock, 
+  CheckCircle2
+} from "lucide-react"
 
-type NotificationType = "INFO" | "EXPENSE_SUBMITTED" | "APPROVAL_REQUIRED" | "APPROVAL_ACTION" | "EXPENSE_APPROVED" | "EXPENSE_REJECTED" | "SYSTEM"
+type NotificationType = "INFO" | "EXPENSE_SUBMITTED" | "APPROVAL_REQUIRED" | "APPROVAL_ACTION" | "EXPENSE_APPROVED" | "EXPENSE_REJECTED" | "SYSTEM" | "STEP_ACTIVATED" | "STEP_COMPLETED"
 
 interface Notification {
   id: string
@@ -23,31 +30,17 @@ interface Notification {
   metadata?: Record<string, unknown>
 }
 
-function getTypeBadgeVariant(type: NotificationType): "default" | "secondary" | "destructive" | "outline" {
+function getTypeConfig(type: NotificationType) {
   switch (type) {
     case "EXPENSE_APPROVED":
-      return "default"
+      return { icon: CheckCircle2, color: "text-emerald-600 bg-emerald-100", label: "Approved" }
     case "EXPENSE_REJECTED":
-      return "destructive"
+      return { icon: X, color: "text-red-600 bg-red-100", label: "Rejected" }
     case "APPROVAL_REQUIRED":
     case "EXPENSE_SUBMITTED":
-      return "secondary"
+      return { icon: Clock, color: "text-amber-600 bg-amber-100", label: "Pending" }
     default:
-      return "outline"
-  }
-}
-
-function getTypeIcon(type: NotificationType): string {
-  switch (type) {
-    case "EXPENSE_APPROVED":
-      return "✓"
-    case "EXPENSE_REJECTED":
-      return "✗"
-    case "APPROVAL_REQUIRED":
-    case "EXPENSE_SUBMITTED":
-      return "!"
-    default:
-      return "i"
+      return { icon: Bell, color: "text-blue-600 bg-blue-100", label: "Info" }
   }
 }
 
@@ -134,40 +127,39 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 rounded-md hover:bg-accent transition-colors"
+        className={cn(
+          "relative p-2.5 rounded-xl transition-all duration-200",
+          showDropdown ? "bg-surface-highest" : "hover:bg-surface"
+        )}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
-        </svg>
+        <Bell className="w-5 h-5 text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-[10px] text-white font-bold leading-none animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-background border rounded-lg shadow-lg z-50">
-          <div className="flex items-center justify-between p-3 border-b">
-            <span className="font-semibold">Notifications</span>
+        <div className="absolute right-0 mt-2 w-96 rounded-2xl surface shadow-elevation-4 border border-border/50 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-headline">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
             {unreadCount > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={markAllRead}
                 disabled={loading}
+                className="text-xs h-8"
               >
+                <Check className="w-3 h-3 mr-1" />
                 Mark all read
               </Button>
             )}
@@ -175,51 +167,56 @@ export function NotificationBell() {
           
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                No notifications
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-surface mx-auto mb-3 flex items-center justify-center">
+                  <Bell className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">No notifications yet</p>
               </div>
             ) : (
-              notifications.map((notification) => (
-                <button
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`w-full p-3 text-left border-b last:border-b-0 hover:bg-accent/50 transition-colors ${
-                    !notification.read ? "bg-accent/30" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      notification.type === "EXPENSE_APPROVED" 
-                        ? "bg-green-100 text-green-700"
-                        : notification.type === "EXPENSE_REJECTED"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {getTypeIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${!notification.read ? "font-medium" : ""}`}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatRelativeTime(notification.createdAt)}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500" />
+              notifications.map((notification) => {
+                const config = getTypeConfig(notification.type)
+                const Icon = config.icon
+                return (
+                  <button
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={cn(
+                      "w-full p-4 text-left transition-all duration-200 hover:bg-surface",
+                      !notification.read ? "bg-primary/[0.02]" : ""
                     )}
-                  </div>
-                </button>
-              ))
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center", config.color)}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-sm truncate",
+                          !notification.read ? "font-semibold text-foreground" : "text-muted-foreground"
+                        )}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 truncate mt-0.5">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground/50 mt-1">
+                          {formatRelativeTime(notification.createdAt)}
+                        </p>
+                      </div>
+                      {!notification.read && (
+                        <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
+                      )}
+                    </div>
+                  </button>
+                )
+              })
             )}
           </div>
           
-          <div className="p-2 border-t">
+          <div className="p-3 border-t border-border/50">
             <Link href="/notifications">
-              <Button variant="ghost" className="w-full" size="sm">
+              <Button variant="ghost" className="w-full justify-center" size="sm">
                 View all notifications
               </Button>
             </Link>
@@ -267,119 +264,82 @@ export function NotificationList({ notifications }: { notifications: Notificatio
 
   if (notifications.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No notifications</h3>
-            <p className="mt-1 text-gray-500">You&apos;re all caught up!</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-16 text-center surface rounded-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-surface-high flex items-center justify-center mb-4">
+          <Bell className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold text-headline">All caught up!</h3>
+        <p className="text-sm text-muted-foreground mt-1">You have no notifications at the moment</p>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>All Notifications</CardTitle>
-          {notifications.some(n => !n.read) && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                fetch("/api/notifications", {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ markAllRead: true }),
-                }).then(() => router.refresh())
-              }}
-              disabled={markingId !== null}
-            >
-              Mark all as read
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`flex items-start gap-4 p-4 rounded-lg border ${
-                notification.read ? "bg-background" : "bg-blue-50 border-blue-200"
-              }`}
-            >
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                notification.type === "EXPENSE_APPROVED" 
-                  ? "bg-green-100 text-green-700"
-                  : notification.type === "EXPENSE_REJECTED"
-                  ? "bg-red-100 text-red-700"
-                  : notification.type === "APPROVAL_REQUIRED"
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}>
-                {getTypeIcon(notification.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={`text-sm ${notification.read ? "text-gray-600" : "text-gray-900 font-medium"}`}>
-                    {notification.title}
-                  </p>
-                  <Badge variant={getTypeBadgeVariant(notification.type)} className="text-xs">
-                    {notification.type.replace(/_/g, " ")}
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {notification.message}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatRelativeTime(notification.createdAt)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {!notification.read && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markAsRead(notification.id)}
-                    disabled={markingId === notification.id}
-                  >
-                    Mark read
-                  </Button>
-                )}
-                {notification.expense && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification.id)
-                      }
-                      router.push(`/expenses/${notification.expense!.id}`)
-                    }}
-                  >
-                    View
-                  </Button>
-                )}
-              </div>
+    <div className="space-y-3">
+      {notifications.map((notification) => {
+        const config = getTypeConfig(notification.type)
+        const Icon = config.icon
+        return (
+          <div
+            key={notification.id}
+            className={cn(
+              "flex items-start gap-4 p-4 rounded-2xl surface transition-all duration-200",
+              !notification.read && "bg-primary/[0.02] border border-primary/10"
+            )}
+          >
+            <div className={cn("flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center", config.color)}>
+              <Icon className="w-5 h-5" />
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className={cn(
+                  "text-sm",
+                  !notification.read ? "font-semibold text-foreground" : "text-muted-foreground"
+                )}>
+                  {notification.title}
+                </p>
+                <Badge variant="gray" className="text-xs">
+                  {config.label}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {notification.message}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-2">
+                {formatRelativeTime(notification.createdAt)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {!notification.read && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => markAsRead(notification.id)}
+                  disabled={markingId === notification.id}
+                  className="h-8"
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+              )}
+              {notification.expense && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!notification.read) {
+                      markAsRead(notification.id)
+                    }
+                    router.push(`/expenses/${notification.expense!.id}`)
+                  }}
+                  className="h-8"
+                >
+                  View
+                </Button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }

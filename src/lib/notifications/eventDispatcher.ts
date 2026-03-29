@@ -4,6 +4,8 @@ export type EventType =
   | "APPROVAL_ACTION"
   | "EXPENSE_APPROVED"
   | "EXPENSE_REJECTED"
+  | "STEP_ACTIVATED"
+  | "STEP_COMPLETED"
 
 export interface EventData {
   expenseId: string
@@ -12,9 +14,11 @@ export interface EventData {
   employeeName: string
   companyId: string
   approverId?: string
+  approverName?: string
   approverIds?: string[]
   action?: "APPROVED" | "REJECTED"
   comment?: string
+  stepNumber?: number
   metadata?: Record<string, unknown>
 }
 
@@ -39,5 +43,6 @@ export function createIdempotencyKey(
   const parts = [event, data.expenseId]
   if (data.approverId) parts.push(data.approverId)
   if (data.action) parts.push(data.action)
+  if (data.stepNumber) parts.push(String(data.stepNumber))
   return parts.join(":")
 }

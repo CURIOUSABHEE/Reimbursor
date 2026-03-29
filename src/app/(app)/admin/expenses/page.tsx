@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { AdminExpenseTable } from "@/components/AdminExpenseTable"
+import { PageHeader } from "@/components/ui/page-header"
 
 export default async function AdminExpensesPage() {
   const session = await getServerSession(authOptions)
@@ -29,7 +30,7 @@ export default async function AdminExpensesPage() {
 
   const company = await prisma.company.findUnique({
     where: { id: session.user.companyId },
-    select: { currency: true },
+    select: { currency: true, name: true },
   })
 
   const employees = await prisma.user.findMany({
@@ -39,12 +40,10 @@ export default async function AdminExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">All Expenses — Admin View</h1>
-        <p className="text-muted-foreground">
-          View and override all expenses in your company
-        </p>
-      </div>
+      <PageHeader
+        title="All Expenses"
+        description={`Manage all expenses for ${company?.name || "your company"}`}
+      />
 
       <AdminExpenseTable
         expenses={expenses.map((e) => ({

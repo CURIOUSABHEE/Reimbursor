@@ -1,8 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/ui/page-header"
+import { EmptyState } from "@/components/ui/empty-state"
 import { ExpenseAmountCell } from "@/components/ExpenseAmountCell"
+import { Plus, FileText } from "lucide-react"
 
 interface Expense {
   id: string
@@ -21,70 +26,93 @@ interface ExpenseListProps {
   expenses: Expense[]
   companyCurrency: string
   viewerRole: "ADMIN" | "MANAGER" | "EMPLOYEE"
+  showCreateButton?: boolean
 }
 
-export function ExpenseList({ expenses, companyCurrency, viewerRole }: ExpenseListProps) {
-  const getStatusBadge = (status: string, isAdminOverride: boolean) => {
-    if (isAdminOverride) {
-      return (
-        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800">
-          Admin Overridden
-        </span>
-      )
-    }
+const statusVariants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+  DRAFT: "secondary",
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "destructive",
+}
 
-    const statusClasses: Record<string, string> = {
-      DRAFT: "bg-gray-100 text-gray-800",
-      PENDING: "bg-yellow-100 text-yellow-800",
-      APPROVED: "bg-green-100 text-green-800",
-      REJECTED: "bg-red-100 text-red-800",
-    }
-
-    return (
-      <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusClasses[status] || statusClasses.DRAFT}`}>
-        {status}
-      </span>
-    )
-  }
-
+export function ExpenseList({ expenses, companyCurrency, viewerRole, showCreateButton = true }: ExpenseListProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Expenses</CardTitle>
-        <CardDescription>View and manage your submitted expenses</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {expenses.length === 0 ? (
-          <p className="text-muted-foreground">No expenses yet</p>
-        ) : (
-          <div className="space-y-4">
-            {expenses.map((expense) => (
-              <Link
-                key={expense.id}
-                href={`/expenses/${expense.id}`}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-              >
-                <div>
-                  <p className="font-medium">{expense.description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {expense.category} - {new Date(expense.date).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-right flex items-center gap-4">
-                  <ExpenseAmountCell
-                    convertedAmount={expense.convertedAmount}
-                    companyCurrency={companyCurrency}
-                    submittedAmount={expense.submittedAmount}
-                    submittedCurrency={expense.submittedCurrency}
-                    viewerRole={viewerRole}
-                  />
-                  {getStatusBadge(expense.status, expense.isAdminOverride)}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <PageHeader
+        title="My Expenses"
+        description="View and manage your submitted expenses"
+        action={
+          showCreateButton && (
+            <Link href="/expenses/new">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Expense
+              </Button>
+            </Link>
+          )
+        }
+      />
+
+      <Card>
+        <CardContent className="p-0">
+          {expenses.length === 0 ? (
+            <EmptyState
+              icon={<FileText className="w-8 h-8" />}
+              title="No expenses yet"
+              description="Create your first expense to get started"
+              action={
+                showCreateButton
+                  ? {
+                      label: "Create expense",
+                      onClick: () => window.location.href = "/expenses/new"
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <div className="divide-y divide-border">
+              {expenses.map((expense) => (
+                <Link
+                  key={expense.id}
+                  href={`/expenses/${expense.id}`}
+                  className="flex items-center justify-between p-4 hover:bg-surface transition-colors"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-muted-foreground shrink-0">
+                      <span className="text-sm font-semibold">{expense.category.charAt(0)}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{expense.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {expense.category} &middot; {new Date(expense.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <ExpenseAmountCell
+                      convertedAmount={expense.convertedAmount}
+                      companyCurrency={companyCurrency}
+                      submittedAmount={expense.submittedAmount}
+                      submittedCurrency={expense.submittedCurrency}
+                      viewerRole={viewerRole}
+                    />
+                    {expense.isAdminOverride ? (
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                        Overridden
+                      </Badge>
+                    ) : (
+                      <Badge variant={statusVariants[expense.status] || "secondary"}>
+                        {expense.status.toLowerCase()}
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

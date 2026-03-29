@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -41,7 +42,17 @@ export default function SignupPage() {
         return
       }
 
-      router.push("/login")
+      const signInResult = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        router.push("/login")
+      } else {
+        router.push("/dashboard")
+      }
     } catch {
       setError("An error occurred. Please try again.")
       setLoading(false)
@@ -93,6 +104,7 @@ export default function SignupPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
+                minLength={6}
               />
             </div>
             <div className="space-y-2">

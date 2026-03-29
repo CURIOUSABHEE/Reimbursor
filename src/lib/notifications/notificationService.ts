@@ -1,21 +1,12 @@
 import { prisma } from "@/lib/prisma"
+import { Prisma, NotificationType } from "@prisma/client"
 import { EventData, emitEvent, registerHandler, createIdempotencyKey } from "./eventDispatcher"
 
-const NotificationType = {
-  INFO: "INFO",
-  EXPENSE_SUBMITTED: "EXPENSE_SUBMITTED",
-  APPROVAL_REQUIRED: "APPROVAL_REQUIRED",
-  APPROVAL_ACTION: "APPROVAL_ACTION",
-  EXPENSE_APPROVED: "EXPENSE_APPROVED",
-  EXPENSE_REJECTED: "EXPENSE_REJECTED",
-  SYSTEM: "SYSTEM",
-} as const
 
-type NotificationTypeValue = typeof NotificationType[keyof typeof NotificationType]
 
 interface CreateNotificationParams {
   userId: string
-  type: NotificationTypeValue
+  type: NotificationType
   title: string
   message: string
   expenseId?: string
@@ -42,12 +33,12 @@ export async function createNotification(
   const notification = await prisma.notification.create({
     data: {
       userId,
-      type: type as "INFO" | "EXPENSE_SUBMITTED" | "APPROVAL_REQUIRED" | "APPROVAL_ACTION" | "EXPENSE_APPROVED" | "EXPENSE_REJECTED" | "SYSTEM",
+      type,
       title,
       message,
       expenseId,
       idempotencyKey,
-      metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : undefined,
+      metadata: metadata as Prisma.InputJsonValue | undefined,
     },
   })
 
@@ -140,6 +131,23 @@ async function handleExpenseRejected(data: EventData): Promise<void> {
   })
 }
 
+async function handleStepActivated(data: EventData): Promise<void> {
+  const key = createIdempotencyKey("STEP_ACTIVATED", data)
+  
+  await createNotification({
+    userId: data.approverId as string,
+    type: NotificationType.STEP_ACTIVATED,
+    title: "Approval Required",
+    message: `A new expense "${data.expenseDescription}" requires your approval (Step ${data.stepNumber}).`,
+    expenseId: data.expenseId,
+    idempotencyKey: key,
+    metadata: {
+      expenseDescription: data.expenseDescription,
+      stepNumber: data.stepNumber,
+    },
+  })
+}
+
 export function initializeNotificationHandlers(): void {
   if (handlersInitialized) return
   
@@ -147,6 +155,7 @@ export function initializeNotificationHandlers(): void {
   registerHandler("APPROVAL_ACTION", handleApprovalAction)
   registerHandler("EXPENSE_APPROVED", handleExpenseApproved)
   registerHandler("EXPENSE_REJECTED", handleExpenseRejected)
+  registerHandler("STEP_ACTIVATED", handleStepActivated)
   
   handlersInitialized = true
 }
@@ -173,4 +182,11 @@ export async function notifyExpenseRejected(
 ): Promise<void> {
   initializeNotificationHandlers()
   await emitEvent("EXPENSE_REJECTED", data)
+}
+
+export async function notifyStepActivated(
+  data: EventData & { approverId: string; approverName: string; stepNumber: number }
+): Promise<void> {
+  initializeNotificationHandlers()
+  await emitEvent("STEP_ACTIVATED", data)
 }
