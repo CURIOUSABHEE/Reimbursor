@@ -173,111 +173,100 @@ export function ApprovalTable({ approvals, companyCurrency }: ApprovalTableProps
 
   const rowActions = (e: Expense) => (
     <>
-      <button
-        type="button"
-        title="View"
+      <button type="button" title="View"
         onClick={() => router.push(`/expenses/${e.id}`)}
-        className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Eye className="w-3.5 h-3.5" />
-      </button>
-      <button
-        type="button"
-        title="Approve"
-        disabled={acting === e.id}
+        className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+      ><Eye className="w-4 h-4" /></button>
+      <button type="button" title="Approve" disabled={acting === e.id}
         onClick={() => handleAction(e.id, "APPROVED")}
-        className="h-6 w-6 flex items-center justify-center rounded hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 transition-colors disabled:opacity-40"
-      >
-        <Check className="w-3.5 h-3.5" />
-      </button>
-      <button
-        type="button"
-        title="Reject"
-        disabled={acting === e.id}
+        className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 transition-colors disabled:opacity-40"
+      ><Check className="w-4 h-4" /></button>
+      <button type="button" title="Reject" disabled={acting === e.id}
         onClick={() => handleAction(e.id, "REJECTED")}
-        className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-40"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+        className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-40"
+      ><X className="w-4 h-4" /></button>
     </>
   )
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h1 className="text-[15px] font-semibold text-foreground">Pending Approvals</h1>
-          <p className="text-[12px] text-muted-foreground">
+    <div className="flex flex-col min-h-full">
+
+      {/* Sticky breadcrumb bar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-8 bg-white border-b border-gray-200 shrink-0" style={{ height: 52 }}>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-semibold text-gray-800">Pending Approvals</span>
+          <span className="text-gray-400 text-xs ml-1">
             {approvals.length} request{approvals.length !== 1 ? "s" : ""} awaiting review
-          </p>
+          </span>
         </div>
         {approvals.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleBulkApprove}
-              className="h-7 px-2.5 text-[12px] rounded border border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1 font-medium transition-colors"
+              className="o-btn o-btn-sm text-emerald-700 border-emerald-200 hover:bg-emerald-50"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" /> Approve All
+              <CheckCircle2 className="w-4 h-4" /> Approve All
             </button>
             <button
               type="button"
               onClick={handleBulkReject}
-              className="h-7 px-2.5 text-[12px] rounded border border-red-200 text-red-700 hover:bg-red-50 flex items-center gap-1 font-medium transition-colors"
+              className="o-btn o-btn-sm text-red-700 border-red-200 hover:bg-red-50"
             >
-              <XCircle className="w-3.5 h-3.5" /> Reject All
+              <XCircle className="w-4 h-4" /> Reject All
             </button>
           </div>
         )}
       </div>
 
-      {/* Table container */}
-      <div className="border border-border rounded-md overflow-hidden flex flex-col">
-        <EnterpriseToolbar
-          search={search}
-          onSearchChange={(v) => { setSearch(v); setPage(1) }}
-          searchPlaceholder="Search by employee, description..."
-          selectionCount={selectedKeys.size}
-          bulkActions={
-            <>
-              <button
-                type="button"
-                onClick={handleBulkApprove}
-                className="h-6 px-2 text-[12px] rounded border border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1"
-              >
-                <Check className="w-3 h-3" /> Approve
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkReject}
-                className="h-6 px-2 text-[12px] rounded border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
-              >
-                <X className="w-3 h-3" /> Reject
-              </button>
-            </>
-          }
-        />
+      {/* Page content */}
+      <div className="flex-1 p-8">
+        <div className="o-container overflow-hidden">
+          <EnterpriseToolbar
+            search={search}
+            onSearchChange={(v) => { setSearch(v); setPage(1) }}
+            searchPlaceholder="Search by employee, description..."
+            selectionCount={selectedKeys.size}
+            bulkActions={
+              <>
+                <button
+                  type="button"
+                  onClick={handleBulkApprove}
+                  className="o-btn o-btn-sm text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                >
+                  <Check className="w-4 h-4" /> Approve
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkReject}
+                  className="o-btn o-btn-sm text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <X className="w-4 h-4" /> Reject
+                </button>
+              </>
+            }
+          />
 
-        <EnterpriseTable
-          columns={columns}
-          data={paginated}
-          keyExtractor={(e) => e.id}
-          onRowClick={(e) => router.push(`/expenses/${e.id}`)}
-          selectedKeys={selectedKeys}
-          onSelectChange={setSelectedKeys}
-          rowActions={rowActions}
-          emptyMessage="No pending approvals — you're all caught up"
-          emptyIcon={<CheckCircle2 className="w-8 h-8" />}
-          className="border-0 rounded-none"
-        />
+          <EnterpriseTable
+            columns={columns}
+            data={paginated}
+            keyExtractor={(e) => e.id}
+            onRowClick={(e) => router.push(`/expenses/${e.id}`)}
+            selectedKeys={selectedKeys}
+            onSelectChange={setSelectedKeys}
+            rowActions={rowActions}
+            emptyMessage="No pending approvals — you're all caught up"
+            emptyIcon={<CheckCircle2 className="w-10 h-10" />}
+            className="border-0 rounded-none"
+          />
 
-        <TablePagination
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={filtered.length}
-          onPageChange={setPage}
-        />
+          <TablePagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
+        </div>
       </div>
     </div>
   )

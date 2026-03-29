@@ -19,7 +19,7 @@ interface Session { user: { id: string; name: string; email: string; role: strin
 interface Props { company: Company | null; showSetup: boolean; onShowSetupChange: (s: boolean) => void }
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
+  return <div className={`animate-pulse bg-gray-200 rounded-lg ${className}`} />
 }
 
 export function DashboardContent({ company, showSetup, onShowSetupChange }: Props) {
@@ -47,15 +47,15 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
 
   if (loading || !session) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="p-8 space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-8 w-28" />
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-20" />)}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
         </div>
-        <Skeleton className="h-64" />
+        <Skeleton className="h-72" />
       </div>
     )
   }
@@ -63,48 +63,52 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
   const isManagerOrAdmin = session.user.role === "MANAGER" || session.user.role === "ADMIN"
 
   const stats = [
-    { label: "Total Submitted", value: data?.totalExpenses ?? 0, icon: Receipt,      color: "#2563eb", bg: "#eff6ff" },
-    { label: "Pending Review",  value: data?.pendingCount ?? 0,  icon: Clock,        color: "#c2410c", bg: "#fff7ed" },
-    { label: "Approved",        value: data?.approvedCount ?? 0, icon: CheckCircle2, color: "#15803d", bg: "#f0fdf4" },
-    { label: "Rejected",        value: data?.rejectedCount ?? 0, icon: XCircle,      color: "#dc2626", bg: "#fef2f2" },
+    { label: "Total Submitted", value: data?.totalExpenses ?? 0, icon: Receipt,      color: "#2563eb", bg: "#dbeafe" },
+    { label: "Pending Review",  value: data?.pendingCount ?? 0,  icon: Clock,        color: "#b45309", bg: "#fef3c7" },
+    { label: "Approved",        value: data?.approvedCount ?? 0, icon: CheckCircle2, color: "#15803d", bg: "#dcfce7" },
+    { label: "Rejected",        value: data?.rejectedCount ?? 0, icon: XCircle,      color: "#dc2626", bg: "#fee2e2" },
   ]
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Breadcrumb / page header */}
-      <div className="o-breadcrumb">
-        <span className="text-gray-400 text-[12px]">Home</span>
-        <span className="text-gray-300 mx-1">/</span>
-        <span className="text-[13px] font-semibold text-gray-800">Dashboard</span>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href="/expenses/new">
-            <button className="o-toolbar-btn o-toolbar-btn-primary">
-              <Plus className="w-3.5 h-3.5" /> New Expense
-            </button>
-          </Link>
+    <div className="flex flex-col min-h-full">
+
+      {/* ── Sticky breadcrumb bar ── */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-0 bg-white border-b border-gray-200 shrink-0" style={{ height: 52 }}>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-400">Home</span>
+          <span className="text-gray-300">/</span>
+          <span className="font-semibold text-gray-800">Dashboard</span>
         </div>
+        <Link href="/expenses/new">
+          <button className="o-btn o-btn-primary o-btn-sm">
+            <Plus className="w-4 h-4" /> New Expense
+          </button>
+        </Link>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
-        {/* Welcome */}
+      {/* ── Page content ── */}
+      <div className="flex-1 p-8 space-y-6">
+
+        {/* Welcome heading */}
         <div>
-          <h1 className="o-page-title">Welcome back, {session.user.name?.split(" ")[0]}</h1>
-          <p className="o-muted mt-0.5">Here&rsquo;s your expense overview for today.</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            Welcome back, <span className="text-blue-600">{session.user.name?.split(" ")[0]}</span>
+          </h1>
+          <p className="text-base text-gray-500 mt-1">Here&rsquo;s your expense overview for today.</p>
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((s) => {
             const Icon = s.icon
             return (
-              <div key={s.label} className="o-stat-card flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.bg }}>
-                  <Icon className="w-4 h-4" style={{ color: s.color }} />
+              <div key={s.label} className="o-stat-card flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: s.bg }}>
+                  <Icon className="w-6 h-6" style={{ color: s.color }} />
                 </div>
                 <div>
-                  <p className="o-label">{s.label}</p>
-                  <p className="text-[20px] font-bold text-gray-900 leading-none mt-0.5">{s.value}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{s.label}</p>
+                  <p className="text-3xl font-bold text-gray-900 leading-none mt-1">{s.value}</p>
                 </div>
               </div>
             )
@@ -112,20 +116,21 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
         </div>
 
         {/* Content grid */}
-        <div className={`grid gap-4 ${isManagerOrAdmin ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
-          {/* Recent expenses table */}
+        <div className={`grid gap-5 ${isManagerOrAdmin ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
+
+          {/* Recent expenses */}
           <div className={`o-container overflow-hidden ${isManagerOrAdmin ? "lg:col-span-2" : ""}`}>
-            <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: "#dcdcdc" }}>
-              <span className="text-[13px] font-semibold text-gray-800">Recent Expenses</span>
-              <Link href="/expenses" className="text-[12px] text-blue-600 hover:underline flex items-center gap-1">
-                View all <ArrowRight className="w-3 h-3" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <span className="text-base font-semibold text-gray-800">Recent Expenses</span>
+              <Link href="/expenses" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                View all <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
             {!data?.expenses?.length ? (
-              <div className="o-empty">
-                <Receipt className="w-8 h-8 opacity-30" />
-                <p className="text-[13px]">No expenses yet</p>
-                <Link href="/expenses/new" className="text-[12px] text-blue-600 hover:underline">Create one</Link>
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+                <Receipt className="w-10 h-10 opacity-25" />
+                <p className="text-base">No expenses yet</p>
+                <Link href="/expenses/new" className="text-sm text-blue-600 hover:underline font-medium">Create one</Link>
               </div>
             ) : (
               <table className="o-table">
@@ -140,7 +145,7 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
                 <tbody>
                   {data.expenses.slice(0, 8).map((e) => (
                     <tr key={e.id} className="cursor-pointer" onClick={() => window.location.href = `/expenses/${e.id}`}>
-                      <td className="font-medium text-gray-900 max-w-[200px] truncate">{e.description}</td>
+                      <td className="font-medium text-gray-900 max-w-[220px] truncate">{e.description}</td>
                       <td className="text-gray-500">{e.category}</td>
                       <td className="text-right font-semibold tabular-nums">
                         {e.submittedCurrency} {e.submittedAmount.toFixed(2)}
@@ -153,34 +158,34 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
             )}
           </div>
 
-          {/* Pending approvals panel */}
+          {/* Pending approvals */}
           {isManagerOrAdmin && (
             <div className="o-container overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: "#dcdcdc" }}>
-                <span className="text-[13px] font-semibold text-gray-800">Pending Approvals</span>
-                <Link href="/approvals" className="text-[12px] text-blue-600 hover:underline flex items-center gap-1">
-                  View <ArrowRight className="w-3 h-3" />
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <span className="text-base font-semibold text-gray-800">Pending Approvals</span>
+                <Link href="/approvals" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                  View <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="flex flex-col items-center justify-center py-8 gap-3 text-center px-4">
+              <div className="flex flex-col items-center justify-center py-10 gap-4 text-center px-6">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ background: (data?.pendingApprovals ?? 0) > 0 ? "#fff7ed" : "#f0fdf4" }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  style={{ background: (data?.pendingApprovals ?? 0) > 0 ? "#fef3c7" : "#dcfce7" }}
                 >
                   {(data?.pendingApprovals ?? 0) > 0
-                    ? <Clock className="w-6 h-6 text-orange-600" />
-                    : <CheckCircle2 className="w-6 h-6 text-green-600" />}
+                    ? <Clock className="w-8 h-8 text-amber-600" />
+                    : <CheckCircle2 className="w-8 h-8 text-green-600" />}
                 </div>
                 <div>
-                  <p className="text-[28px] font-bold text-gray-900 leading-none">{data?.pendingApprovals ?? 0}</p>
-                  <p className="text-[12px] text-gray-500 mt-1">
+                  <p className="text-4xl font-bold text-gray-900 leading-none">{data?.pendingApprovals ?? 0}</p>
+                  <p className="text-sm text-gray-500 mt-2">
                     {(data?.pendingApprovals ?? 0) > 0 ? "waiting for your review" : "All caught up!"}
                   </p>
                 </div>
                 {(data?.pendingApprovals ?? 0) > 0 && (
                   <Link href="/approvals">
-                    <button className="o-toolbar-btn o-toolbar-btn-primary mt-1">
-                      <TrendingUp className="w-3.5 h-3.5" /> Review now
+                    <button className="o-btn o-btn-primary">
+                      <TrendingUp className="w-4 h-4" /> Review now
                     </button>
                   </Link>
                 )}

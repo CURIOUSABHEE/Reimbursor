@@ -38,33 +38,23 @@ export default async function AdminExpensesPage() {
   })
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="o-breadcrumb">
-        <span className="text-gray-400 text-[12px]">Admin</span>
-        <span className="text-gray-300 mx-1">/</span>
-        <span className="text-[13px] font-semibold text-gray-800">All Expenses</span>
-        <span className="ml-2 text-[11px] text-gray-400">{company?.name}</span>
-      </div>
-      <div className="flex-1 overflow-auto p-4">
-      <AdminExpenseTable
-        expenses={expenses.map((e) => ({
-          id: e.id,
-          description: e.description,
-          category: e.category,
-          date: e.date.toISOString(),
-          submittedAmount: Number(e.submittedAmount),
-          submittedCurrency: e.submittedCurrency,
-          convertedAmount: Number(e.convertedAmount),
-          status: e.status,
-          employee: e.employee,
-          isAdminOverride: e.isAdminOverride,
-          adminOverrideAt: e.adminOverrideAt?.toISOString() || null,
-          adminOverrideComment: e.adminOverrideComment,
-        }))}
-        companyCurrency={company?.currency || "USD"}
-        employees={employees}
-      />
-      </div>
-    </div>
+    <AdminExpenseTable
+      expenses={expenses.map((e) => ({
+        id: e.id,
+        description: e.description,
+        category: e.category,
+        date: e.date.toISOString(),
+        submittedAmount: Number(e.submittedAmount),
+        submittedCurrency: e.submittedCurrency,
+        convertedAmount: Number(e.convertedAmount),
+        status: e.status,
+        employee: e.employee,
+        isAdminOverride: e.isAdminOverride,
+        adminOverrideAt: e.adminOverrideAt?.toISOString() || null,
+        adminOverrideComment: e.adminOverrideComment,
+      }))}
+      companyCurrency={company?.currency || "USD"}
+      employees={employees}
+    />
   )
 }

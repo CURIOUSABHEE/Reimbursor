@@ -92,12 +92,12 @@ export function EnterpriseTable<T>({
 
   if (loading) {
     return (
-      <div className={cn("border border-border rounded-md overflow-hidden bg-card", className)}>
+      <div className={cn("bg-card", className)}>
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 animate-pulse">
-            <div className="h-3 bg-muted rounded w-1/4" />
-            <div className="h-3 bg-muted rounded w-1/3" />
-            <div className="h-3 bg-muted rounded w-1/5 ml-auto" />
+          <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-border last:border-0 animate-pulse">
+            <div className="h-4 bg-muted rounded w-1/4" />
+            <div className="h-4 bg-muted rounded w-1/3" />
+            <div className="h-4 bg-muted rounded w-1/5 ml-auto" />
           </div>
         ))}
       </div>
@@ -106,10 +106,10 @@ export function EnterpriseTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className={cn("border border-border rounded-md bg-card", className)}>
-        <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-          {emptyIcon && <div className="opacity-40 mb-1">{emptyIcon}</div>}
-          <p className="text-sm">{emptyMessage}</p>
+      <div className={cn("bg-card", className)}>
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+          {emptyIcon && <div className="opacity-30 mb-2">{emptyIcon}</div>}
+          <p className="text-base font-medium">{emptyMessage}</p>
         </div>
       </div>
     )
@@ -118,20 +118,20 @@ export function EnterpriseTable<T>({
   return (
     <div className={cn("border border-border rounded-md overflow-hidden bg-card", className)}>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[13px]">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr className={cn(
-              "bg-[hsl(var(--surface-container-high))] border-b border-border",
+              "bg-gray-50 border-b border-border",
               stickyHeader && "thead-sticky"
             )}>
               {selectable && (
-                <th className="w-9 px-3 py-2.5 text-left">
+                <th className="w-10 px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     ref={(el) => { if (el) el.indeterminate = someSelected }}
                     onChange={toggleAll}
-                    className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                    className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
                   />
                 </th>
               )}
@@ -139,28 +139,28 @@ export function EnterpriseTable<T>({
                 <th
                   key={col.key}
                   className={cn(
-                    "px-3 py-2.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground whitespace-nowrap select-none",
+                    "px-4 py-3 font-700 text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap select-none",
                     alignClass(col.align),
                     col.sortable && "cursor-pointer hover:text-foreground transition-colors",
                     col.headerClassName
                   )}
                   onClick={() => col.sortable && handleSort(col.key)}
                 >
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 font-bold">
                     {col.header}
                     {col.sortable && (
                       <span className="opacity-50">
                         {sortKey === col.key ? (
-                          sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                          sortDir === "asc" ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
                         ) : (
-                          <ChevronsUpDown className="w-3 h-3" />
+                          <ChevronsUpDown className="w-3.5 h-3.5" />
                         )}
                       </span>
                     )}
                   </span>
                 </th>
               ))}
-              {rowActions && <th className="w-1 px-2 py-2.5" />}
+              {rowActions && <th className="w-1 px-3 py-3" />}
             </tr>
           </thead>
           <tbody>
@@ -174,21 +174,21 @@ export function EnterpriseTable<T>({
                     "group border-b border-border last:border-0 transition-colors",
                     onRowClick && "cursor-pointer",
                     isSelected
-                      ? "bg-primary/[0.04] hover:bg-primary/[0.07]"
-                      : "hover:bg-[hsl(var(--surface-container-low))]"
+                      ? "bg-blue-50/60 hover:bg-blue-50"
+                      : "hover:bg-gray-50/80"
                   )}
                   onClick={() => onRowClick?.(row)}
                 >
                   {selectable && (
                     <td
-                      className="w-9 px-3 py-2.5"
+                      className="w-10 px-4 py-3.5"
                       onClick={(e) => { e.stopPropagation(); toggleRow(key) }}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleRow(key)}
-                        className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                        className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
                       />
                     </td>
                   )}
@@ -196,7 +196,7 @@ export function EnterpriseTable<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "px-3 py-2.5 align-middle",
+                        "px-4 py-3.5 align-middle text-sm",
                         alignClass(col.align),
                         col.className
                       )}
@@ -206,10 +206,10 @@ export function EnterpriseTable<T>({
                   ))}
                   {rowActions && (
                     <td
-                      className="px-2 py-2.5 text-right"
+                      className="px-3 py-3.5 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="row-actions flex items-center justify-end gap-0.5">
+                      <div className="row-actions flex items-center justify-end gap-1">
                         {rowActions(row)}
                       </div>
                     </td>

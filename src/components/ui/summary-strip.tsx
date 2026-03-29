@@ -38,24 +38,24 @@ export function SummaryStrip({ items, activeKey, onSelect, className, leading }:
             onClick={() => onSelect(isActive ? null : item.key)}
             className={cn("summary-strip-item text-left", isActive && "active")}
           >
-            <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="flex items-center gap-2 mb-1">
               {item.dotColor && (
                 <span className={cn("status-pill-dot", item.dotColor)} />
               )}
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">
                 {item.label}
               </span>
               {item.count !== undefined && (
                 <span className={cn(
-                  "ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
-                  isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  "ml-auto text-xs font-bold px-2 py-0.5 rounded-full",
+                  isActive ? "bg-primary/15 text-primary" : "bg-gray-100 text-gray-500"
                 )}>
                   {item.count}
                 </span>
               )}
             </div>
             <p className={cn(
-              "text-sm font-bold tracking-tight leading-none",
+              "text-lg font-bold tracking-tight leading-none",
               isActive ? "text-primary" : "text-foreground"
             )}>
               {item.value}

@@ -9,7 +9,6 @@ import { SummaryStrip, SummaryStripItem } from "@/components/ui/summary-strip"
 import { EnterpriseToolbar } from "@/components/ui/enterprise-toolbar"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { StatusPill } from "@/components/ui/status-pill"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -223,9 +222,9 @@ export function ExpenseTable({
         <button
           type="button"
           title="View"
-          className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Eye className="w-3.5 h-3.5" />
+          <Eye className="w-4 h-4" />
         </button>
       </Link>
       {e.status === "DRAFT" && (
@@ -234,101 +233,105 @@ export function ExpenseTable({
           title="Delete"
           disabled={deleting === e.id}
           onClick={() => handleDelete(e.id)}
-          className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+          className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       )}
     </>
   )
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h1 className="text-[15px] font-semibold text-foreground">Expenses</h1>
-          <p className="text-[12px] text-muted-foreground">{expenses.length} total records</p>
+    <div className="flex flex-col min-h-full">
+
+      {/* Sticky breadcrumb bar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-8 bg-white border-b border-gray-200 shrink-0" style={{ height: 52 }}>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-semibold text-gray-800">Expenses</span>
+          <span className="text-gray-400 text-xs ml-1">{expenses.length} total records</span>
         </div>
         {showCreateButton && (
           <Link href="/expenses/new">
-            <Button size="sm" className="h-7 text-[12px] gap-1 px-2.5">
-              <Plus className="w-3.5 h-3.5" /> New
-            </Button>
+            <button className="o-btn o-btn-primary o-btn-sm">
+              <Plus className="w-4 h-4" /> New Expense
+            </button>
           </Link>
         )}
       </div>
 
-      {/* Summary strip */}
-      <SummaryStrip
-        items={stripItems}
-        activeKey={statusFilter}
-        onSelect={handleFilterChange}
-        className="mb-3"
-      />
+      {/* Page content */}
+      <div className="flex-1 p-8 space-y-5">
 
-      {/* Table container */}
-      <div className="border border-border rounded-md overflow-hidden flex flex-col">
-        <EnterpriseToolbar
-          actions={
-            showCreateButton ? (
-              <Link href="/expenses/new">
-                <Button size="sm" className="h-7 text-[12px] gap-1 px-2.5">
-                  <Plus className="w-3.5 h-3.5" /> New
-                </Button>
-              </Link>
-            ) : undefined
-          }
-          search={search}
-          onSearchChange={(v) => { setSearch(v); setPage(1) }}
-          searchPlaceholder="Search expenses..."
-          filters={
-            <div className="flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-              <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1) }}>
-                <SelectTrigger className="h-7 text-[12px] w-[130px] border-border">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          }
-          selectionCount={selectedKeys.size}
-          bulkActions={
-            <button
-              type="button"
-              onClick={handleBulkDelete}
-              className="h-6 px-2 text-[12px] rounded border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
-            >
-              <Trash2 className="w-3 h-3" /> Delete
-            </button>
-          }
+        {/* Summary strip */}
+        <SummaryStrip
+          items={stripItems}
+          activeKey={statusFilter}
+          onSelect={handleFilterChange}
         />
 
-        <EnterpriseTable
-          columns={columns}
-          data={paginated}
-          keyExtractor={(e) => e.id}
-          onRowClick={(e) => router.push(`/expenses/${e.id}`)}
-          selectedKeys={selectedKeys}
-          onSelectChange={setSelectedKeys}
-          rowActions={rowActions}
-          emptyMessage="No expenses match your filters"
-          emptyIcon={<FileText className="w-8 h-8" />}
-          className="border-0 rounded-none"
-        />
+        {/* Table card */}
+        <div className="o-container overflow-hidden">
+          <EnterpriseToolbar
+            actions={
+              showCreateButton ? (
+                <Link href="/expenses/new">
+                  <button className="o-btn o-btn-primary o-btn-sm">
+                    <Plus className="w-4 h-4" /> New
+                  </button>
+                </Link>
+              ) : undefined
+            }
+            search={search}
+            onSearchChange={(v) => { setSearch(v); setPage(1) }}
+            searchPlaceholder="Search expenses..."
+            filters={
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1) }}>
+                  <SelectTrigger className="h-8 text-sm w-[150px] border-border">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Categories</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            }
+            selectionCount={selectedKeys.size}
+            bulkActions={
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                className="o-btn o-btn-sm text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            }
+          />
 
-        <TablePagination
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={filtered.length}
-          onPageChange={setPage}
-        />
+          <EnterpriseTable
+            columns={columns}
+            data={paginated}
+            keyExtractor={(e) => e.id}
+            onRowClick={(e) => router.push(`/expenses/${e.id}`)}
+            selectedKeys={selectedKeys}
+            onSelectChange={setSelectedKeys}
+            rowActions={rowActions}
+            emptyMessage="No expenses match your filters"
+            emptyIcon={<FileText className="w-10 h-10" />}
+            className="border-0 rounded-none"
+          />
+
+          <TablePagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
+        </div>
       </div>
     </div>
   )
