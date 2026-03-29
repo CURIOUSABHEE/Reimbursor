@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import type { Prisma } from "@prisma/client"
 
 export async function POST(
   request: Request,
@@ -50,7 +51,7 @@ export async function POST(
       orderBy: { createdAt: "asc" },
     })
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let stepCounter = 1
 
       for (const rule of rules) {
@@ -83,6 +84,8 @@ export async function POST(
             data: {
               userId: approverId,
               expenseId,
+              type: "APPROVAL_REQUIRED",
+              title: "New Expense Requires Approval",
               message: `New expense "${expense.description}" requires your approval.`,
             },
           })

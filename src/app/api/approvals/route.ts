@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { approvalActionSchema } from "@/lib/validations"
 import { initializeNotificationHandlers, notifyApprovalAction, notifyExpenseApproved, notifyExpenseRejected } from "@/lib/notifications"
+import type { Prisma } from "@prisma/client"
 
 initializeNotificationHandlers()
 
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     const expense = approvalActionRecord.expense
     let isFullyApproved = false
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.approvalAction.update({
         where: { id: approvalActionRecord.id },
         data: {

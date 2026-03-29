@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NotificationList } from "@/components/Notifications"
+import type { Notification } from "@prisma/client"
 
 export default async function NotificationsPage() {
   const session = await getServerSession(authOptions)
@@ -35,7 +36,7 @@ export default async function NotificationsPage() {
       </div>
 
       <NotificationList
-        notifications={notifications.map((n) => ({
+        notifications={notifications.map((n: Notification & { expense: { id: string; description: string } | null }) => ({
           id: n.id,
           type: n.type,
           title: n.title,

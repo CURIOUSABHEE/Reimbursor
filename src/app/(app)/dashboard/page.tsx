@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma"
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard"
 import { ManagerDashboard } from "@/components/dashboard/ManagerDashboard"
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard"
+import type { Expense, ApprovalAction } from "@prisma/client"
+
+type ExpenseWithEmployee = Expense & {
+  employee: { name: string; email: string }
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -56,7 +61,7 @@ export default async function DashboardPage() {
         pendingCount={pendingCount}
         approvedTotal={Number(approvedTotal._sum.convertedAmount ?? 0)}
         pendingTotal={Number(pendingTotal._sum.convertedAmount ?? 0)}
-        expenses={allExpenses.map((e) => ({
+        expenses={(allExpenses as ExpenseWithEmployee[]).map((e: ExpenseWithEmployee) => ({
           id: e.id,
           description: e.description,
           category: e.category,
@@ -100,7 +105,7 @@ export default async function DashboardPage() {
         pendingApprovalCount={pendingApprovals.length}
         approvedByMe={approvedByMe}
         rejectedByMe={rejectedByMe}
-        myExpenses={myExpenses.map((e) => ({
+        myExpenses={myExpenses.map((e: Expense) => ({
           id: e.id,
           description: e.description,
           category: e.category,
@@ -110,7 +115,7 @@ export default async function DashboardPage() {
           convertedAmount: Number(e.convertedAmount),
           status: e.status,
         }))}
-        pendingApprovals={pendingApprovals.map((a) => ({
+        pendingApprovals={pendingApprovals.map((a: ApprovalAction & { expense: ExpenseWithEmployee }) => ({
           id: a.expense.id,
           description: a.expense.description,
           category: a.expense.category,
@@ -152,7 +157,7 @@ export default async function DashboardPage() {
       toSubmit={Number(toSubmit._sum.convertedAmount ?? 0)}
       underValidation={Number(underValidation._sum.convertedAmount ?? 0)}
       toBeReimbursed={Number(toBeReimbursed._sum.convertedAmount ?? 0)}
-      expenses={expenses.map((e) => ({
+      expenses={expenses.map((e: Expense) => ({
         id: e.id,
         description: e.description,
         category: e.category,

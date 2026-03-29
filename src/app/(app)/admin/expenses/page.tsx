@@ -3,6 +3,12 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { AdminExpenseTable } from "@/components/AdminExpenseTable"
+import type { Expense } from "@prisma/client"
+
+type ExpenseWithRelations = Expense & {
+  employee: { name: string; email: string }
+  approvalActions: { approver: { name: string }; stepOrder: number }[]
+}
 
 export default async function AdminExpensesPage() {
   const session = await getServerSession(authOptions)
@@ -47,7 +53,7 @@ export default async function AdminExpensesPage() {
       </div>
 
       <AdminExpenseTable
-        expenses={expenses.map((e) => ({
+        expenses={(expenses as ExpenseWithRelations[]).map((e) => ({
           id: e.id,
           description: e.description,
           category: e.category,

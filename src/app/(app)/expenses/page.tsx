@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ExpenseList } from "@/components/ExpenseList"
+import type { Expense } from "@prisma/client"
 
 export default async function ExpensesPage() {
   const session = await getServerSession(authOptions)
@@ -36,7 +37,7 @@ export default async function ExpensesPage() {
       </div>
 
       <ExpenseList
-        expenses={expenses.map((e) => ({
+        expenses={expenses.map((e: Expense & { employee: { name: string; email: string } }) => ({
           ...e,
           submittedAmount: Number(e.submittedAmount),
           convertedAmount: Number(e.convertedAmount),

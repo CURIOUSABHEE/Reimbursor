@@ -3,6 +3,13 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApprovalList } from "@/components/ApprovalList"
+import type { ApprovalAction, Expense } from "@prisma/client"
+
+type ApprovalWithExpense = ApprovalAction & {
+  expense: Expense & {
+    employee: { id: string; name: string; email: string }
+  }
+}
 
 export default async function ApprovalsPage() {
   const session = await getServerSession(authOptions)
@@ -45,7 +52,7 @@ export default async function ApprovalsPage() {
       </div>
 
       <ApprovalList
-        approvals={pendingApprovals.map((a) => ({
+        approvals={(pendingApprovals as ApprovalWithExpense[]).map((a) => ({
           ...a.expense,
           submittedAmount: Number(a.expense.submittedAmount),
           convertedAmount: Number(a.expense.convertedAmount),

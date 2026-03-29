@@ -165,14 +165,18 @@ model Receipt {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  expenseId String?
-  expense   Expense? @relation(fields: [expenseId], references: [id])
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  expenseId       String?
+  expense         Expense? @relation(fields: [expenseId], references: [id])
+  type            String
+  title           String
+  message         String
+  read            Boolean  @default(false)
+  idempotencyKey  String?  @unique
+  metadata        Json?
+  createdAt       DateTime @default(now())
 }
 
 model SendPasswordToken {
