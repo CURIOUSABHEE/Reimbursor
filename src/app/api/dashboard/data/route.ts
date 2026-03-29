@@ -10,50 +10,174 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const [expenses, stats, pendingApprovals] = await Promise.all([
-    prisma.expense.findMany({
-      where: { employeeId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        description: true,
-        category: true,
-        submittedAmount: true,
-        submittedCurrency: true,
-        status: true,
-        createdAt: true,
+  const { id: userId, companyId, role } = session.user
+
+  if (role === "ADMIN") {
+    const [userCount, statusStats, expenseList, pendingApprovals] = await Promise.all([
+      prisma.user.count({ where: { companyId } }),
+      prisma.expense.groupBy({
+        by: ["status"],
+        where: { companyId },
+        _count: { _all: true },
+      }),
+      prisma.expense.findMany({
+        where: { companyId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          employee: { select: { name: true, email: true } },
+        },
+      }),
+      prisma.approvalAction.count({
+        where: { approverId: userId, action: "PENDING" },
+      }),
+    ])
+
+    const statusCounts = statusStats.reduce(
+      (acc: Record<string, number>, s: { status: string; _count: { _all: number } }) => {
+        acc[s.status] = s._count._all
+        return acc
       },
+      { PENDING: 0, APPROVED: 0, REJECTED: 0, DRAFT: 0 } as Record<string, number>
+    )
+
+    const pendingTotal = await prisma.expense.aggregate({
+      where: { companyId, status: "PENDING" },
+      _sum: { convertedAmount: true },
+    })
+
+    const approvedTotal = await prisma.expense.aggregate({
+      where: { companyId, status: "APPROVED" },
+      _sum: { convertedAmount: true },
+    })
+
+    return NextResponse.json({
+      role: "ADMIN",
+      userCount,
+      pendingCount: statusCounts.PENDING || 0,
+      approvedTotal: Number(approvedTotal._sum.convertedAmount) || 0,
+      pendingTotal: Number(pendingTotal._sum.convertedAmount) || 0,
+      expenses: expenseList.map((e) => ({
+        id: e.id,
+        description: e.description,
+        category: e.category,
+        date: e.date,
+        submittedAmount: Number(e.submittedAmount),
+        submittedCurrency: e.submittedCurrency,
+        convertedAmount: Number(e.convertedAmount),
+        status: e.status,
+        employee: e.employee,
+        isAdminOverride: e.isAdminOverride,
+      })),
+      pendingApprovals,
+    })
+  }
+
+  if (role === "MANAGER") {
+    const [myExpenses, statusStats, pendingApprovals, approvedByMe, rejectedByMe] = await Promise.all([
+      prisma.expense.findMany({
+        where: { employeeId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.expense.groupBy({
+        by: ["status"],
+        where: { employeeId: userId },
+        _count: { _all: true },
+      }),
+      prisma.approvalAction.findMany({
+        where: { approverId: userId, action: "PENDING" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          expense: {
+            include: { employee: { select: { name: true, email: true } } },
+          },
+        },
+        take: 10,
+      }),
+      prisma.approvalAction.count({
+        where: { approverId: userId, action: "APPROVED" },
+      }),
+      prisma.approvalAction.count({
+        where: { approverId: userId, action: "REJECTED" },
+      }),
+    ])
+
+    const statusCounts = statusStats.reduce(
+      (acc: Record<string, number>, s: { status: string; _count: { _all: number } }) => {
+        acc[s.status] = s._count._all
+        return acc
+      },
+      { PENDING: 0, APPROVED: 0, REJECTED: 0, DRAFT: 0 } as Record<string, number>
+    )
+
+    return NextResponse.json({
+      role: "MANAGER",
+      pendingApprovalCount: pendingApprovals.length,
+      approvedByMe,
+      rejectedByMe,
+      myExpenses: myExpenses.map((e) => ({
+        id: e.id,
+        description: e.description,
+        category: e.category,
+        date: e.date,
+        submittedAmount: Number(e.submittedAmount),
+        submittedCurrency: e.submittedCurrency,
+        convertedAmount: Number(e.convertedAmount),
+        status: e.status,
+      })),
+      pendingApprovals: pendingApprovals.map((a) => ({
+        id: a.expense.id,
+        description: a.expense.description,
+        category: a.expense.category,
+        date: a.expense.date,
+        submittedAmount: Number(a.expense.submittedAmount),
+        submittedCurrency: a.expense.submittedCurrency,
+        convertedAmount: Number(a.expense.convertedAmount),
+        status: a.expense.status,
+        employee: a.expense.employee,
+      })),
+      pendingCount: statusCounts.PENDING || 0,
+      approvedCount: statusCounts.APPROVED || 0,
+      rejectedCount: statusCounts.REJECTED || 0,
+    })
+  }
+
+  const [expenses, stats] = await Promise.all([
+    prisma.expense.findMany({
+      where: { employeeId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
     }),
     prisma.expense.groupBy({
       by: ["status"],
-      where: { employeeId: session.user.id },
-      _count: true,
+      where: { employeeId: userId },
+      _count: { _all: true },
     }),
-    session.user.role === "MANAGER" || session.user.role === "ADMIN"
-      ? prisma.approvalAction.count({
-          where: { approverId: session.user.id, action: "PENDING" },
-        })
-      : Promise.resolve(0),
   ])
 
   const statusCounts = stats.reduce(
-    (acc: Record<string, number>, s: { status: string; _count: number }) => {
-      acc[s.status] = s._count
+    (acc: Record<string, number>, s: { status: string; _count: { _all: number } }) => {
+      acc[s.status] = s._count._all
       return acc
     },
     { PENDING: 0, APPROVED: 0, REJECTED: 0, DRAFT: 0 } as Record<string, number>
   )
 
   return NextResponse.json({
+    role: "EMPLOYEE",
     expenses: expenses.map((e) => ({
-      ...e,
+      id: e.id,
+      description: e.description,
+      category: e.category,
+      date: e.date,
       submittedAmount: Number(e.submittedAmount),
+      submittedCurrency: e.submittedCurrency,
+      convertedAmount: Number(e.convertedAmount),
+      status: e.status,
     })),
-    totalExpenses: expenses.length,
     pendingCount: statusCounts.PENDING || 0,
     approvedCount: statusCounts.APPROVED || 0,
     rejectedCount: statusCounts.REJECTED || 0,
-    pendingApprovals,
   })
 }

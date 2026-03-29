@@ -12,8 +12,21 @@ interface Expense {
   submittedAmount: number; submittedCurrency: string; status: string; createdAt: string
 }
 interface DashboardData {
-  expenses: Expense[]; totalExpenses: number; pendingCount: number
-  approvedCount: number; rejectedCount: number; pendingApprovals: number
+  role: string
+  expenses: Expense[]
+  totalExpenses: number
+  pendingCount: number
+  approvedCount: number
+  rejectedCount: number
+  pendingApprovals: number
+  userCount?: number
+  approvedTotal?: number
+  pendingTotal?: number
+  pendingApprovalCount?: number
+  approvedByMe?: number
+  rejectedByMe?: number
+  myExpenses?: Expense[]
+  pendingApprovalsList?: Expense[]
 }
 interface Session { user: { id: string; name: string; email: string; role: string } }
 interface Props { company: Company | null; showSetup: boolean; onShowSetupChange: (s: boolean) => void }
@@ -33,7 +46,10 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
     Promise.all([fetch("/api/auth/session"), fetch("/api/dashboard/data")])
       .then(async ([sr, dr]) => {
         if (sr.ok) setSession(await sr.json())
-        if (dr.ok) setData(await dr.json())
+        if (dr.ok) {
+          const dashboardData = await dr.json()
+          setData(dashboardData)
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -61,13 +77,16 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
   }
 
   const isManagerOrAdmin = session.user.role === "MANAGER" || session.user.role === "ADMIN"
+  const totalExpenses = data?.expenses?.length ?? data?.totalExpenses ?? 0
 
   const stats = [
-    { label: "Total Submitted", value: data?.totalExpenses ?? 0, icon: Receipt,      color: "#2563eb", bg: "#eff6ff" },
+    { label: "Total Submitted", value: totalExpenses, icon: Receipt,      color: "#2563eb", bg: "#eff6ff" },
     { label: "Pending Review",  value: data?.pendingCount ?? 0,  icon: Clock,        color: "#c2410c", bg: "#fff7ed" },
     { label: "Approved",        value: data?.approvedCount ?? 0, icon: CheckCircle2, color: "#15803d", bg: "#f0fdf4" },
     { label: "Rejected",        value: data?.rejectedCount ?? 0, icon: XCircle,      color: "#dc2626", bg: "#fef2f2" },
   ]
+
+  const pendingApprovals = data?.pendingApprovals ?? data?.pendingApprovalCount ?? 0
 
   return (
     <div className="flex flex-col h-full">
@@ -165,19 +184,19 @@ export function DashboardContent({ company, showSetup, onShowSetupChange }: Prop
               <div className="flex flex-col items-center justify-center py-8 gap-3 text-center px-4">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ background: (data?.pendingApprovals ?? 0) > 0 ? "#fff7ed" : "#f0fdf4" }}
+                  style={{ background: pendingApprovals > 0 ? "#fff7ed" : "#f0fdf4" }}
                 >
-                  {(data?.pendingApprovals ?? 0) > 0
+                  {pendingApprovals > 0
                     ? <Clock className="w-6 h-6 text-orange-600" />
                     : <CheckCircle2 className="w-6 h-6 text-green-600" />}
                 </div>
                 <div>
-                  <p className="text-[28px] font-bold text-gray-900 leading-none">{data?.pendingApprovals ?? 0}</p>
+                  <p className="text-[28px] font-bold text-gray-900 leading-none">{pendingApprovals}</p>
                   <p className="text-[12px] text-gray-500 mt-1">
-                    {(data?.pendingApprovals ?? 0) > 0 ? "waiting for your review" : "All caught up!"}
+                    {pendingApprovals > 0 ? "waiting for your review" : "All caught up!"}
                   </p>
                 </div>
-                {(data?.pendingApprovals ?? 0) > 0 && (
+                {pendingApprovals > 0 && (
                   <Link href="/approvals">
                     <button className="o-toolbar-btn o-toolbar-btn-primary mt-1">
                       <TrendingUp className="w-3.5 h-3.5" /> Review now
