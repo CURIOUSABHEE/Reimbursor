@@ -27,11 +27,11 @@ export default async function NotificationsPage() {
   })
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="o-breadcrumb">
-        <span className="text-[13px] font-semibold text-gray-800">Notifications</span>
+    <div className="flex flex-col min-h-full">
+      <div className="sticky top-0 z-10 flex items-center px-8 bg-white border-b border-gray-200 shrink-0" style={{ height: 52 }}>
+        <span className="font-semibold text-gray-800 text-sm">Notifications</span>
       </div>
-      <div className="flex-1 overflow-auto p-4 max-w-3xl">
+      <div className="flex-1 p-8 max-w-3xl">
       <NotificationList
         notifications={notifications.map((n: Notification & { expense: { id: string; description: string } | null }) => ({
           id: n.id,
