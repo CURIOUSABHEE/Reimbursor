@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { redirect, notFound } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import type { ApprovalAction, User } from "@prisma/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -149,7 +150,7 @@ export default async function ExpenseDetailPage({
             <p className="text-muted-foreground">No approval actions yet</p>
           ) : (
             <div className="space-y-4">
-              {expense.approvalActions.map((action) => (
+              {expense.approvalActions.map((action: ApprovalAction & { approver: User }) => (
                 <div
                   key={action.id}
                   className="flex items-center justify-between p-4 border rounded-lg"

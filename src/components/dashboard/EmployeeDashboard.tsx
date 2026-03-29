@@ -28,7 +28,7 @@ interface Props {
   expenses: Expense[]
 }
 
-export function EmployeeDashboard({ userName, currency, toSubmit, underValidation, toBeReimbursed, expenses }: Props) {
+export function EmployeeDashboard({ currency, toSubmit, underValidation, toBeReimbursed, expenses }: Props) {
   const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
 

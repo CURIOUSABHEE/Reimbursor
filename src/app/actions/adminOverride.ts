@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import type { ApprovalAction, Prisma } from "@prisma/client"
 
 export async function adminOverrideExpense(input: {
   expenseId: string
@@ -43,10 +44,10 @@ export async function adminOverrideExpense(input: {
   const newStatus = input.action === "APPROVE" ? "APPROVED" : "REJECTED"
 
   const pendingApprovers = expense.approvalActions
-    .filter((a) => a.action === "PENDING")
-    .map((a) => a.approverId)
+    .filter((a: ApprovalAction) => a.action === "PENDING")
+    .map((a: ApprovalAction) => a.approverId)
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.approvalAction.updateMany({
       where: { expenseId: input.expenseId, action: "PENDING" },
       data: {
