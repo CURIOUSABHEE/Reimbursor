@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import { expenseSchema } from "@/lib/validations"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -41,33 +42,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { description, category, date, submittedAmount, submittedCurrency, exchangeRate } = body
+  try {
+    const body = await request.json()
+    
+    const parsed = expenseSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
+      )
+    }
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.user.companyId },
-  })
+    const { description, category, date, submittedAmount, submittedCurrency, exchangeRate } = parsed.data
 
-  if (!company) {
-    return NextResponse.json({ error: "Company not found" }, { status: 404 })
+    const company = await prisma.company.findUnique({
+      where: { id: session.user.companyId },
+    })
+
+    if (!company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 })
+    }
+
+    const convertedAmount = submittedAmount * exchangeRate
+
+    const expense = await prisma.expense.create({
+      data: {
+        description,
+        category,
+        date: new Date(date),
+        submittedAmount,
+        submittedCurrency,
+        convertedAmount,
+        exchangeRate,
+        companyId: session.user.companyId,
+        employeeId: session.user.id,
+        status: "DRAFT",
+      },
+    })
+
+    return NextResponse.json(expense, { status: 201 })
+  } catch (error) {
+    console.error("Error creating expense:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
-
-  const convertedAmount = submittedAmount * exchangeRate
-
-  const expense = await prisma.expense.create({
-    data: {
-      description,
-      category,
-      date: new Date(date),
-      submittedAmount,
-      submittedCurrency,
-      convertedAmount,
-      exchangeRate,
-      companyId: session.user.companyId,
-      employeeId: session.user.id,
-      status: "DRAFT",
-    },
-  })
-
-  return NextResponse.json(expense, { status: 201 })
 }

@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { signupSchema } from "@/lib/validations"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, companyName, companyCurrency } = body
-
-    if (!name || !email || !password || !companyName) {
+    
+    const parsed = signupSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: parsed.error.issues[0].message },
         { status: 400 }
       )
     }
+
+    const { name, email, password, companyName, companyCurrency } = parsed.data
 
     const existingUser = await prisma.user.findUnique({
       where: { email },

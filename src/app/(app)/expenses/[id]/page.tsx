@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/formatCurrency"
+import { SubmitExpenseButton } from "@/components/SubmitExpenseButton"
 
 export default async function ExpenseDetailPage({
   params,
@@ -45,6 +46,8 @@ export default async function ExpenseDetailPage({
     session.user.role === "ADMIN" ||
     session.user.role === "MANAGER"
 
+  const isOwner = expense.employeeId === session.user.id
+
   if (!canView) {
     redirect("/expenses")
   }
@@ -68,9 +71,15 @@ export default async function ExpenseDetailPage({
             Expense Details
           </p>
         </div>
-        <Link href="/expenses">
-          <Button variant="outline">Back to Expenses</Button>
-        </Link>
+        <div className="flex gap-2">
+          <SubmitExpenseButton
+            expenseId={expense.id}
+            isDraft={expense.status === "DRAFT" && isOwner}
+          />
+          <Link href="/expenses">
+            <Button variant="outline">Back to Expenses</Button>
+          </Link>
+        </div>
       </div>
 
       {expense.isAdminOverride && (
