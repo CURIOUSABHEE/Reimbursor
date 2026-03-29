@@ -1,31 +1,24 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { Navbar } from "@/components/Navbar"
-import { Sidebar } from "@/components/Sidebar"
+import { OdooTopbar } from "@/components/OdooTopbar"
+import { OdooSidebar } from "@/components/OdooSidebar"
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar — fixed left column */}
-      <Sidebar userRole={session?.user?.role} />
+    <div className="flex flex-col min-h-screen" style={{ background: "#f0f0f0" }}>
+      {/* Global topbar */}
+      <OdooTopbar />
 
-      {/* Main column — stretches to fill remaining width */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Utility top bar */}
-        <Navbar />
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar */}
+        <OdooSidebar userRole={session?.user?.role} />
 
-        {/* Page content — centered, consistent horizontal padding */}
-        <main className="flex-1 px-6 py-8">
-          <div className="max-w-6xl mx-auto w-full">
-            {children}
-          </div>
+        {/* Main content */}
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {children}
         </main>
       </div>
     </div>

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { AdminExpenseTable } from "@/components/AdminExpenseTable"
-import { PageHeader } from "@/components/ui/page-header"
 
 export default async function AdminExpensesPage() {
   const session = await getServerSession(authOptions)
@@ -39,12 +38,14 @@ export default async function AdminExpensesPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="All Expenses"
-        description={`Manage all expenses for ${company?.name || "your company"}`}
-      />
-
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-gray-400 text-[12px]">Admin</span>
+        <span className="text-gray-300 mx-1">/</span>
+        <span className="text-[13px] font-semibold text-gray-800">All Expenses</span>
+        <span className="ml-2 text-[11px] text-gray-400">{company?.name}</span>
+      </div>
+      <div className="flex-1 overflow-auto p-4">
       <AdminExpenseTable
         expenses={expenses.map((e) => ({
           id: e.id,
@@ -63,6 +64,7 @@ export default async function AdminExpensesPage() {
         companyCurrency={company?.currency || "USD"}
         employees={employees}
       />
+      </div>
     </div>
   )
 }

@@ -27,12 +27,11 @@ export default async function NotificationsPage() {
   })
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-page-title">Notifications</h1>
-        <p className="text-body-muted mt-1">Stay updated on your expense approvals.</p>
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-[13px] font-semibold text-gray-800">Notifications</span>
       </div>
-
+      <div className="flex-1 overflow-auto p-4 max-w-3xl">
       <NotificationList
         notifications={notifications.map((n: Notification & { expense: { id: string; description: string } | null }) => ({
           id: n.id,
@@ -47,6 +46,7 @@ export default async function NotificationsPage() {
           metadata: n.metadata as Record<string, unknown> | undefined,
         }))}
       />
+      </div>
     </div>
   )
 }

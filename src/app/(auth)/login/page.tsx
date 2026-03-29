@@ -4,29 +4,19 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [email, setEmail]       = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [error, setError]       = useState("")
+  const [loading, setLoading]   = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
-
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
-
+    const result = await signIn("credentials", { email, password, redirect: false })
     if (result?.error) {
       setError("Invalid email or password")
       setLoading(false)
@@ -36,60 +26,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-          </form>
-          <p className="mt-2 text-center text-sm">
-            <Link href="/forgot-password" className="text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </p>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+    <div className="o-auth-card">
+      {/* Logo */}
+      <div className="flex items-center gap-2 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+          <span className="text-white font-bold text-sm">R</span>
+        </div>
+        <span className="text-[16px] font-bold text-gray-900">Reimbursor</span>
+      </div>
+
+      <h1 className="text-[18px] font-bold text-gray-900 mb-1">Sign in</h1>
+      <p className="text-[12px] text-gray-500 mb-6">Enter your credentials to continue</p>
+
+      {error && (
+        <div className="mb-4 px-3 py-2 rounded border border-red-200 bg-red-50 text-red-700 text-[12px]">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="o-field-label">Email</label>
+          <input
+            type="email"
+            className="o-input"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="o-field-label">Password</label>
+          <input
+            type="password"
+            className="o-input"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-9 rounded-md bg-blue-600 text-white text-[13px] font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 mt-2"
+        >
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
+
+      <div className="mt-4 flex items-center justify-between text-[12px]">
+        <Link href="/forgot-password" className="text-blue-600 hover:underline">
+          Forgot password?
+        </Link>
+        <Link href="/signup" className="text-blue-600 hover:underline">
+          Create account
+        </Link>
+      </div>
     </div>
   )
 }

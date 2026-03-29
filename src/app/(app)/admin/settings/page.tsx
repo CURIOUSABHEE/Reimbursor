@@ -3,110 +3,66 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Card, CardContent } from "@/components/ui/card"
-import { PageHeader, Section } from "@/components/ui/page-header"
-import { cn } from "@/lib/utils"
-import { Building2, Bell, Shield, Palette, ChevronRight } from "lucide-react"
+import { Building2, Bell, Shield, Workflow, ChevronRight } from "lucide-react"
 
 export default async function AdminSettingsPage() {
   const session = await getServerSession(authOptions)
+  if (!session) redirect("/login")
+  if (session.user.role !== "ADMIN") redirect("/dashboard")
 
-  if (!session) {
-    redirect("/login")
-  }
-
-  if (session.user.role !== "ADMIN") {
-    redirect("/dashboard")
-  }
-
-  const company = await prisma.company.findUnique({
-    where: { id: session.user.companyId },
-  })
+  const company = await prisma.company.findUnique({ where: { id: session.user.companyId } })
 
   const settings = [
-    {
-      title: "Company Settings",
-      description: "Manage company name, currency, and preferences",
-      icon: Building2,
-      href: "/dashboard",
-    },
-    {
-      title: "Notifications",
-      description: "Configure notification preferences",
-      icon: Bell,
-      href: "/notifications",
-    },
-    {
-      title: "User Management",
-      description: "Manage user roles and permissions",
-      icon: Shield,
-      href: "/admin/users",
-    },
-    {
-      title: "Approval Workflow",
-      description: "Configure expense approval workflows",
-      icon: Palette,
-      href: "/admin/workflow",
-    },
+    { title: "Company Settings",   description: "Manage company name, currency, and preferences", icon: Building2, href: "/dashboard" },
+    { title: "Notifications",      description: "Configure notification preferences",              icon: Bell,      href: "/notifications" },
+    { title: "User Management",    description: "Manage user roles and permissions",               icon: Shield,    href: "/admin/users" },
+    { title: "Approval Workflow",  description: "Configure expense approval workflows",            icon: Workflow,  href: "/admin/workflow" },
   ]
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Settings"
-        description="Manage your company preferences and configurations"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {settings.map((setting) => {
-          const Icon = setting.icon
-          return (
-            <Link
-              key={setting.title}
-              href={setting.href || "#"}
-              className={cn(
-                "block p-6 rounded-2xl border border-border bg-card transition-all hover:bg-surface hover:shadow-md"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-primary/10">
-                  <Icon className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{setting.title}</h3>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{setting.description}</p>
-                </div>
-              </div>
-            </Link>
-          )
-        })}
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-gray-400 text-[12px]">Admin</span>
+        <span className="text-gray-300 mx-1">/</span>
+        <span className="text-[13px] font-semibold text-gray-800">Settings</span>
       </div>
+      <div className="flex-1 overflow-auto p-4 space-y-4 max-w-3xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {settings.map((s) => {
+            const Icon = s.icon
+            return (
+              <Link key={s.title} href={s.href} className="o-container p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-semibold text-gray-900">{s.title}</p>
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <p className="text-[12px] text-gray-500 mt-0.5">{s.description}</p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
 
-      <Section title="Company Information">
-        <Card>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              <div className="flex justify-between items-center p-4">
-                <span className="text-muted-foreground">Company Name</span>
-                <span className="font-medium">{company?.name || "Not set"}</span>
-              </div>
-              <div className="flex justify-between items-center p-4">
-                <span className="text-muted-foreground">Default Currency</span>
-                <span className="font-medium">{company?.currency || "USD"}</span>
-              </div>
-              <div className="flex justify-between items-center p-4">
-                <span className="text-muted-foreground">Company ID</span>
-                <span className="font-mono text-sm text-muted-foreground">
-                  {company?.id.slice(0, 8)}...
-                </span>
-              </div>
+        <div className="o-container overflow-hidden">
+          <div className="px-3 py-2 border-b" style={{ borderColor: "#dcdcdc", background: "#f7f7f7" }}>
+            <span className="text-[12px] font-semibold text-gray-700">Company Information</span>
+          </div>
+          {[
+            { label: "Company Name",    value: company?.name || "Not set" },
+            { label: "Default Currency", value: company?.currency || "USD" },
+            { label: "Company ID",      value: company?.id.slice(0, 8) + "..." },
+          ].map((row) => (
+            <div key={row.label} className="flex justify-between items-center px-3 py-2.5 border-b last:border-0" style={{ borderColor: "#ebebeb" }}>
+              <span className="text-[12px] text-gray-500">{row.label}</span>
+              <span className="text-[13px] font-medium text-gray-900">{row.value}</span>
             </div>
-          </CardContent>
-        </Card>
-      </Section>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
