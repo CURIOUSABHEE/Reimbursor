@@ -43,6 +43,20 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sidebar: {
+          bg: "hsl(var(--sidebar-bg))",
+          fg: "hsl(var(--sidebar-fg))",
+          "fg-active": "hsl(var(--sidebar-fg-active))",
+          border: "hsl(var(--sidebar-border))",
+          "item-hover": "hsl(var(--sidebar-item-hover))",
+          "item-active": "hsl(var(--sidebar-item-active))",
+          indicator: "hsl(var(--sidebar-indicator))",
+        },
+      },
+      fontFamily: {
+        headline: ["DM Sans", "system-ui", "-apple-system", "sans-serif"],
+        body: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",
