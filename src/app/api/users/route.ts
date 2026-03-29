@@ -85,7 +85,6 @@ export async function POST(request: Request) {
 
     const plainPassword = generatePassword()
     const hashedPassword = await hash(plainPassword, 12)
-    console.log(`[DEV] Created user ${email} with password: ${plainPassword}`)
 
     const user = await prisma.user.create({
       data: {
@@ -127,7 +126,6 @@ export async function PATCH(request: Request) {
 
     const plainPassword = generatePassword()
     const hashedPassword = await hash(plainPassword, 12)
-    console.log(`[DEV] Reset password for ${user.email}: ${plainPassword}`)
 
     await prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } })
     await sendWelcomeEmail(user.email, user.name, plainPassword)

@@ -73,15 +73,24 @@ export default function WorkflowBuilderPage() {
   }
 
   return (
-    <div className="space-y-8 max-w-3xl">
-      <div>
-        <h1 className="text-page-title">Approval Workflow</h1>
-        <p className="text-body-muted mt-1">
-          Configure how expense approvals flow through your organization.
-        </p>
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-gray-400 text-[12px]">Admin</span>
+        <span className="text-gray-300 mx-1">/</span>
+        <span className="text-[13px] font-semibold text-gray-800">Approval Workflow</span>
       </div>
+      <div className="flex-1 overflow-auto p-4">
+        <div className="space-y-6 max-w-3xl">
+          <div>
+            <h1 className="text-page-title">Approval Workflow</h1>
+            <p className="text-body-muted mt-1">
+              Configure how expense approvals flow through your organization.
+            </p>
+          </div>
 
-      <StepBuilder users={users} onSave={handleSave} initialSteps={steps} />
+          <StepBuilder users={users} onSave={handleSave} initialSteps={steps} />
+        </div>
+      </div>
     </div>
   )
 }

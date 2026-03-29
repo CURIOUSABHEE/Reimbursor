@@ -200,16 +200,22 @@ export default function AdminUsersPage() {
   )
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="User Management"
-        description="Manage employees, managers, and admin roles"
-        action={
-          <Button size="sm" onClick={openCreate} className="gap-1.5">
-            <Plus className="w-4 h-4" /> Add User
-          </Button>
-        }
-      />
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-gray-400 text-[12px]">Admin</span>
+        <span className="text-gray-300 mx-1">/</span>
+        <span className="text-[13px] font-semibold text-gray-800">User Management</span>
+      </div>
+      <div className="flex-1 overflow-auto p-4 space-y-6">
+        <PageHeader
+          title="User Management"
+          description="Manage employees, managers, and admin roles"
+          action={
+            <Button size="sm" onClick={openCreate} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Add User
+            </Button>
+          }
+        />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -349,6 +355,7 @@ export default function AdminUsersPage() {
           </form>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
 }

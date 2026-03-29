@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { initializeNotificationHandlers, notifyExpenseSubmitted, notifyStepActivated } from "@/lib/notifications"
 import { createWorkflowEngine } from "@/lib/workflow/engine"
+import { ExpenseStatus } from "@prisma/client"
 
 initializeNotificationHandlers()
 
@@ -37,12 +38,30 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    if (expense.status !== "DRAFT") {
+    if (expense.status !== ExpenseStatus.REJECTED) {
       return NextResponse.json(
-        { error: "Only draft expenses can be submitted" },
+        { error: "Only rejected expenses can be resubmitted" },
         { status: 400 }
       )
     }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.approvalAction.deleteMany({
+        where: { expenseId },
+      })
+
+      await tx.expense.update({
+        where: { id: expenseId },
+        data: {
+          status: ExpenseStatus.DRAFT,
+          currentWorkflowStep: 0,
+          isAdminOverride: false,
+          adminOverrideById: null,
+          adminOverrideAt: null,
+          adminOverrideComment: null,
+        },
+      })
+    })
 
     const workflowEngine = await createWorkflowEngine(expenseId, session.user.companyId)
     const result = await workflowEngine.createApprovalWorkflow()
@@ -82,10 +101,11 @@ export async function POST(
 
     return NextResponse.json({ 
       success: true,
-      workflowId: result.workflowId
+      workflowId: result.workflowId,
+      newStatus: ExpenseStatus.PENDING
     })
   } catch (error) {
-    console.error("Submit expense error:", error)
+    console.error("Resubmit expense error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

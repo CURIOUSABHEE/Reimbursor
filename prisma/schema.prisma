@@ -115,6 +115,7 @@ model ApprovalWorkflow {
   steps ApprovalStep[]
 
   @@unique([companyId, name])
+  @@index([companyId, isActive])
 }
 
 model ApprovalStep {
@@ -130,6 +131,8 @@ model ApprovalStep {
   specificApprover   User?            @relation("StepApprover", fields: [specificApproverId], references: [id])
   approverRole       Role?
   autoComplete       Boolean          @default(false)
+  minAmount          Decimal?         @db.Decimal(10, 2)
+  maxAmount          Decimal?         @db.Decimal(10, 2)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 

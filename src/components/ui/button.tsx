@@ -4,27 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0",
-        destructive:
-          "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 hover:-translate-y-0.5",
-        outline:
-          "border-2 border-border bg-transparent hover:bg-surface hover:border-foreground/20",
-        secondary:
-          "bg-surface text-foreground hover:bg-surface-high",
-        ghost: "hover:bg-surface",
-        link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30",
-        warning: "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30",
+        default: "bg-[#2563eb] text-white hover:bg-[#1d4ed8]",
+        destructive: "bg-[#dc2626] text-white hover:bg-[#b91c1c]",
+        outline: "border border-[#dcdcdc] bg-white text-[#212121] hover:bg-[#f5f5f5]",
+        secondary: "bg-[#f7f7f7] text-[#212121] hover:bg-[#ebebeb]",
+        ghost: "hover:bg-[#f5f5f5] text-[#212121]",
+        link: "text-[#2563eb] underline-offset-4 hover:underline",
+        success: "bg-[#16a34a] text-white hover:bg-[#15803d]",
+        warning: "bg-[#ea580c] text-white hover:bg-[#c2410c]",
       },
       size: {
-        default: "h-11 px-5 py-2.5",
-        sm: "h-9 px-4 py-2 text-xs",
-        lg: "h-12 px-8 py-3 text-base",
-        icon: "h-11 w-11",
+        default: "h-8 px-3 text-[12px]",
+        sm: "h-7 px-2.5 text-[11px]",
+        lg: "h-9 px-4 text-[13px]",
+        icon: "h-8 w-8",
       },
     },
     defaultVariants: {

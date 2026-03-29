@@ -20,10 +20,6 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
-
   const pendingApprovals = await prisma.approvalAction.findMany({
     where: {
       approverId: session.user.id,

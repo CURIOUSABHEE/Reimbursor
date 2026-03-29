@@ -136,16 +136,22 @@ export default function ApprovalRulesPage() {
   const managers = users.filter(u => u.role === "MANAGER" || u.role === "ADMIN")
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-page-title">Approval Rules</h1>
-          <p className="text-body-muted mt-1">Define who approves expenses and in what order.</p>
-        </div>
-        <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5 shrink-0">
-          <Plus className="h-4 w-4" /> New Rule
-        </Button>
+    <div className="flex flex-col h-full">
+      <div className="o-breadcrumb">
+        <span className="text-gray-400 text-[12px]">Admin</span>
+        <span className="text-gray-300 mx-1">/</span>
+        <span className="text-[13px] font-semibold text-gray-800">Approval Rules</span>
       </div>
+      <div className="flex-1 overflow-auto p-4 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-page-title">Approval Rules</h1>
+            <p className="text-body-muted mt-1">Define who approves expenses and in what order.</p>
+          </div>
+          <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5 shrink-0">
+            <Plus className="h-4 w-4" /> New Rule
+          </Button>
+        </div>
 
       {/* Form */}
       {showForm && (
@@ -370,6 +376,7 @@ export default function ApprovalRulesPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

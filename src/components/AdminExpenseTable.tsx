@@ -69,6 +69,7 @@ export function AdminExpenseTable({ expenses, companyCurrency, employees }: Admi
   const [dateTo, setDateTo] = useState<string>("")
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState<string | null>(null)
   const [overrideDialog, setOverrideDialog] = useState<{
     open: boolean
     expenseId: string
@@ -190,6 +191,35 @@ export function AdminExpenseTable({ expenses, companyCurrency, employees }: Admi
 
   const handleOverrideSuccess = () => {
     router.refresh()
+  }
+
+  const handleBulkAction = async (action: "APPROVE" | "REJECT") => {
+    if (selectedExpenses.size === 0) return
+    
+    setBulkActionLoading(action)
+    try {
+      const response = await fetch("/api/admin/expenses/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          expenseIds: Array.from(selectedExpenses),
+          action,
+        }),
+      })
+
+      if (response.ok) {
+        setSelectedExpenses(new Set())
+        router.refresh()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to perform bulk action")
+      }
+    } catch (error) {
+      console.error("Bulk action error:", error)
+      alert("Failed to perform bulk action")
+    } finally {
+      setBulkActionLoading(null)
+    }
   }
 
   const openApproveDialog = (expense: Expense) => {
@@ -364,12 +394,32 @@ export function AdminExpenseTable({ expenses, companyCurrency, employees }: Admi
                 {selectedExpenses.size} expense{selectedExpenses.size > 1 ? "s" : ""} selected
               </span>
               <div className="flex gap-2">
-                <Button size="sm" variant="success" className="gap-1">
-                  <Check className="w-4 h-4" />
+                <Button 
+                  size="sm" 
+                  variant="success" 
+                  className="gap-1"
+                  disabled={bulkActionLoading !== null}
+                  onClick={() => handleBulkAction("APPROVE")}
+                >
+                  {bulkActionLoading === "APPROVE" ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
                   Bulk Approve
                 </Button>
-                <Button size="sm" variant="destructive" className="gap-1">
-                  <X className="w-4 h-4" />
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="gap-1"
+                  disabled={bulkActionLoading !== null}
+                  onClick={() => handleBulkAction("REJECT")}
+                >
+                  {bulkActionLoading === "REJECT" ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
                   Bulk Reject
                 </Button>
               </div>
