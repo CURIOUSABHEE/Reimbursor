@@ -60,7 +60,37 @@ export async function POST(request: Request) {
     })
 
     if (!company) {
-      return NextResponse.json({ error: "Company not found" }, { status: 404 })
+      // Re-fetch user in case session is stale
+      const freshUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { companyId: true },
+      })
+      if (!freshUser?.companyId) {
+        return NextResponse.json({ error: "Company not found" }, { status: 404 })
+      }
+      const freshCompany = await prisma.company.findUnique({
+        where: { id: freshUser.companyId },
+      })
+      if (!freshCompany) {
+        return NextResponse.json({ error: "Company not found" }, { status: 404 })
+      }
+      // Use fresh companyId
+      const convertedAmount = submittedAmount * exchangeRate
+      const expense = await prisma.expense.create({
+        data: {
+          description,
+          category,
+          date: new Date(date),
+          submittedAmount,
+          submittedCurrency,
+          convertedAmount,
+          exchangeRate,
+          companyId: freshUser.companyId,
+          employeeId: session.user.id,
+          status: "DRAFT",
+        },
+      })
+      return NextResponse.json(expense, { status: 201 })
     }
 
     const convertedAmount = submittedAmount * exchangeRate

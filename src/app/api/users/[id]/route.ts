@@ -26,9 +26,7 @@ export async function GET(
         select: { id: true, name: true }
       },
       createdAt: true,
-      managedEmployees: {
-        select: { id: true, name: true }
-      }
+      reports: { select: { id: true, name: true, email: true, role: true } }
     },
   })
 
