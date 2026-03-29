@@ -72,7 +72,9 @@ export async function adminOverrideExpense(input: {
       data: {
         userId: expense.employeeId,
         expenseId: expense.id,
-        message: `Your expense "${expense.description}" was ${newStatus === "APPROVED" ? "approved" : "rejected"} by an admin override.`,
+        type: newStatus === "APPROVED" ? "EXPENSE_APPROVED" : "EXPENSE_REJECTED",
+        title: `Expense ${newStatus === "APPROVED" ? "Approved" : "Rejected"} by Admin`,
+        message: `Your expense "${expense.description}" was ${newStatus === "APPROVED" ? "approved" : "rejected"} by an admin override.${input.comment ? ` Comment: ${input.comment}` : ""}`,
       },
     })
 
@@ -81,6 +83,8 @@ export async function adminOverrideExpense(input: {
         data: {
           userId: approverId,
           expenseId: expense.id,
+          type: "INFO",
+          title: "Approval Override",
           message: `The expense "${expense.description}" submitted by ${expense.employee.name} was overridden by an admin. Your approval action is no longer required.`,
         },
       })

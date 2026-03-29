@@ -75,6 +75,10 @@ model Expense {
   approvalActions     ApprovalAction[]
   receipt             Receipt?
   notifications       Notification[]
+
+  @@index([employeeId, status])
+  @@index([companyId, status])
+  @@index([createdAt])
 }
 
 enum ExpenseCategory {
@@ -129,6 +133,7 @@ model ApprovalAction {
   updatedAt   DateTime        @updatedAt
 
   @@unique([expenseId, stepOrder])
+  @@index([approverId, action])
 }
 
 enum ActionStatus {
@@ -149,14 +154,31 @@ model Receipt {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
   expenseId String?
-  expense   Expense? @relation(fields: [expenseId], references: [id])
+  expense   Expense?         @relation(fields: [expenseId], references: [id])
+  type      NotificationType @default(INFO)
+  title     String
   message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  read      Boolean          @default(false)
+  metadata  Json?
+  idempotencyKey String?    @unique
+  createdAt DateTime        @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  INFO
+  EXPENSE_SUBMITTED
+  APPROVAL_REQUIRED
+  APPROVAL_ACTION
+  EXPENSE_APPROVED
+  EXPENSE_REJECTED
+  SYSTEM
 }
 
 model SendPasswordToken {

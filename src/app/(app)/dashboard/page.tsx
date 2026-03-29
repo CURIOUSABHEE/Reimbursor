@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { prisma } from "@/lib/prisma"
+import { getDashboardData } from "@/lib/dashboard"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -13,30 +13,11 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const myExpenses = await prisma.expense.findMany({
-    where: { employeeId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  })
-
-  const pendingCount = await prisma.expense.count({
-    where: { employeeId: session.user.id, status: "PENDING" },
-  })
-
-  const approvedCount = await prisma.expense.count({
-    where: { employeeId: session.user.id, status: "APPROVED" },
-  })
-
-  const rejectedCount = await prisma.expense.count({
-    where: { employeeId: session.user.id, status: "REJECTED" },
-  })
-
-  let pendingApprovals = 0
-  if (session.user.role === "MANAGER" || session.user.role === "ADMIN") {
-    pendingApprovals = await prisma.approvalAction.count({
-      where: { approverId: session.user.id, action: "PENDING" },
-    })
-  }
+  const data = await getDashboardData(
+    session.user.id,
+    session.user.companyId,
+    session.user.role
+  )
 
   return (
     <div className="space-y-8">
@@ -60,7 +41,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{myExpenses.length}</div>
+            <div className="text-2xl font-bold">{data.totalExpenses}</div>
           </CardContent>
         </Card>
         <Card>
@@ -70,7 +51,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
+            <div className="text-2xl font-bold text-yellow-600">{data.pendingCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -80,7 +61,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{approvedCount}</div>
+            <div className="text-2xl font-bold text-green-600">{data.approvedCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -90,7 +71,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{rejectedCount}</div>
+            <div className="text-2xl font-bold text-red-600">{data.rejectedCount}</div>
           </CardContent>
         </Card>
       </div>
@@ -102,7 +83,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {pendingApprovals}
+              {data.pendingApprovals}
             </div>
             <Link href="/approvals" className="mt-2 inline-block">
               <Button variant="outline" size="sm">
@@ -118,11 +99,11 @@ export default async function DashboardPage() {
           <CardTitle>Recent Expenses</CardTitle>
         </CardHeader>
         <CardContent>
-          {myExpenses.length === 0 ? (
+          {data.expenses.length === 0 ? (
             <p className="text-muted-foreground">No expenses yet</p>
           ) : (
             <div className="space-y-4">
-              {myExpenses.map((expense) => (
+              {data.expenses.map((expense) => (
                 <Link
                   key={expense.id}
                   href={`/expenses/${expense.id}`}
@@ -132,7 +113,7 @@ export default async function DashboardPage() {
                     <p className="font-medium">{expense.description}</p>
                     <p className="text-sm text-muted-foreground">
                       {expense.category} - {expense.submittedCurrency}{" "}
-                      {expense.submittedAmount.toString()}
+                      {expense.submittedAmount}
                     </p>
                   </div>
                   <div className="text-right">

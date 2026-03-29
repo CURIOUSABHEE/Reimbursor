@@ -37,12 +37,15 @@ export default async function NotificationsPage() {
       <NotificationList
         notifications={notifications.map((n) => ({
           id: n.id,
+          type: n.type,
+          title: n.title,
           message: n.message,
           read: n.read,
           createdAt: n.createdAt.toISOString(),
           expense: n.expense
             ? { id: n.expense.id, description: n.expense.description }
             : undefined,
+          metadata: n.metadata as Record<string, unknown> | undefined,
         }))}
       />
     </div>

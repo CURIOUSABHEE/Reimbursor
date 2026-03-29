@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import { initializeNotificationHandlers, notifyExpenseSubmitted } from "@/lib/notifications"
+
+initializeNotificationHandlers()
 
 export async function POST(
   request: Request,
@@ -74,14 +77,6 @@ export async function POST(
               stepOrder: rule.stepOrder,
             },
           })
-
-          await tx.notification.create({
-            data: {
-              userId: approver.id,
-              expenseId,
-              message: `New expense "${expense.description}" (${expense.convertedAmount}) requires your approval.`,
-            },
-          })
         }
       }
 
@@ -89,6 +84,14 @@ export async function POST(
         where: { id: expenseId },
         data: { status: "PENDING" },
       })
+    })
+
+    await notifyExpenseSubmitted({
+      expenseId,
+      expenseDescription: expense.description,
+      employeeId: expense.employeeId,
+      employeeName: expense.employee.name,
+      companyId: session.user.companyId,
     })
 
     return NextResponse.json({ success: true })
